@@ -1,6 +1,6 @@
 # Product Marketing Context
 
-**Document version:** v1
+**Document version:** v2
 **Last updated:** 2026-08-12
 
 Read this before writing any copy for this site. It settles who the copy is for,
@@ -29,7 +29,10 @@ mood, values on gender dimensions the person defines, tags, a note and photos. O
 time it gives back search, per-dimension charts, tag insights, photo comparison and
 monthly recaps.
 
-**Where it runs:** in a browser, and as an Android app built from the same code.
+**Where it runs:** in a browser today. An Android app from the same code is planned,
+and until Journal ticket 11 lands there is no Android project at all, so no page may
+say the app runs on Android. This is the one place in the overview where the
+finished-product frame is easiest to publish by accident.
 
 **Product category:** people arrive looking for a mood tracker, an HRT tracker or a
 private diary app. "Transition tracker" is a thin shelf, so most of the audience is
@@ -181,7 +184,10 @@ passphrase. Betting on a niche app that gets abandoned in a year.
 
 Copy should answer the anxieties where they arise rather than in a block: Daylio
 import preserves the history, the backup notice and scheduled encrypted backup
-address the loss, and GPLv3 plus an open Archive format address abandonment.
+address the loss, and GPLv3 plus an open Archive format address abandonment. Two of
+those are not available yet: scheduled backup needs Journal tickets 11 and 16, and
+the daily check-in named under the jobs above needs 11 and 14. Check the table before
+using either.
 
 ## Customer Language
 
@@ -213,24 +219,33 @@ source code, you can check.
 - "Journey" as a load-bearing word. Onboarding uses it once as a button, which is
   fine; a landing page that leans on it sounds like every other wellness product.
 
-**Glossary:** the Journal repository's `CONTEXT.md` is the source. Do not restate a
-definition here or in copy, and do not coin a synonym for a term it already owns.
-These are the ones most likely to be got wrong in marketing prose:
+**Glossary:** the Journal repository's `CONTEXT.md` is the source, and it is the only
+source. Read the definition there before using any of these words in copy. This table
+deliberately carries no definitions, because a second copy of one drifts from the
+first and the drift is invisible until a page is already wrong. What it carries is
+the wrong word each term attracts, taken from that file's own `_Avoid_` lines:
 
-| Term | The trap |
+| Term | Do not write |
 |---|---|
-| Journal | Everything the device holds about the person's transition. Not "your data", not "the database". |
-| Entry | One logged moment. Not "log", not "record", and specifically not "check-in". |
-| Check-in | The daily prompt to write an entry. A preference, not a Reminder, and not an Entry. |
-| Reminder | A medication, injection or appointment prompt. Android only, though it travels in an Archive. |
-| Gender dimension | The project's word. Screens say "scale" to the person using the app, so copy has to decide which register it is in and stay there. |
-| Archive | The encrypted file that export produces. Not "backup file". |
-| Backup | The habit of keeping an Archive somewhere else. Not a sync and not a live copy. |
-| App lock | The PIN or biometric gate. Never "database password" or "encryption password". |
-| Journal passphrase | Unlocks the encrypted Journal on the web. Not a "master password" and not an account password, because there is no account. |
-| Data key | The random key the contents are encrypted under. Not a "master key". |
-| Milestone | A dated significant day. Not an "event". |
-| Hidden | Removed from every picker while history survives. Not "archived", which means something else here, and not "deleted". |
+| Journal | store, database |
+| Entry | log, record, check-in |
+| Reminder | any use for the daily prompt, which is a Check-in |
+| Gender dimension | axis, metric. Screens say "scale" to the person, so copy picks one register and stays in it |
+| Archive | backup, dump, export file |
+| Backup | sync, replica |
+| App lock | database password, encryption password |
+| Journal passphrase | master password, account password, PIN |
+| Data key | master key, database key |
+| Milestone | event, occasion |
+| Hidden | archived, disabled, deleted, soft-deleted |
+| Metric | colour metric, measure, dimension |
+| Range | scale, bounds |
+
+One term the glossary does not settle, and copy will hit it on the primary action:
+`CONTEXT.md` defines **Journal** as what the device holds, while both specs also say
+"the Journal" for the application and its repository, as in "the production Journal
+origin" and the Start journal button. Copy needs one of these senses per page, and
+ticket 03 should decide which and say so, rather than letting a reader meet both.
 
 ## Brand Voice
 
@@ -260,6 +275,52 @@ rules:
 - No emoji, no em dashes, no rule-of-three lists that were not three things to begin
   with.
 - No claim without shipped evidence, per the table below.
+
+## Voice in Polish
+
+Ticket 05 writes the Polish site. Everything above is the English voice, and none of
+it transfers by translation. Polish copy is written as Polish from the claims the
+English settles, with `humanizer-pl` in mind from the first sentence rather than as a
+cleanup pass afterwards.
+
+**Grammatical gender is the hard problem, and it is not a style question.** Polish
+inflects the second person for gender in the past tense and in adjectives, so an
+ordinary sentence addressed to the reader picks a gender for them. On a site about
+gender transition that is the worst available mistake, and it is one the English
+never has to solve.
+
+The app already gets this wrong. Its Polish note placeholder reads "Co się
+wydarzyło? Jak się z tym czułaś?" against an English original of "What happened? How
+did it feel?" The Polish assumes a woman is writing. That belongs in the Journal's
+translation audit, Phase 2 ticket 19, and the site must not copy the pattern.
+
+Techniques that avoid the problem, in the order worth reaching for them:
+
+- Present tense, which is not gendered in the second person. "Jak się z tym czujesz"
+  costs nothing and picks nobody's gender.
+- Impersonal and infinitive constructions: "można", "wystarczy", "da się", verbal
+  nouns like "zapisywanie" instead of a past-tense verb with a subject.
+- Rewriting around the sentence entirely. If a past-tense address is unavoidable, the
+  sentence is usually the problem.
+- Never a slash form. "Zapisałeś/aś" is ugly, it still offers exactly two options, and
+  it makes the reader do the work of noticing they were nearly misgendered.
+
+**Form of address:** informal second person. Pan and Pani are formal and force a
+gender in the first word of the sentence, which rules them out here regardless of
+register.
+
+**Nouns for the reader:** "użytkownik" is both masculine and the Polish equivalent of
+"users", so it fails two rules at once. Address the reader directly instead.
+
+**Terminology:** the app ships Polish already, so the site matches it rather than
+coining alternatives. Read `messages/pl.json` in the Journal repository. Wpis is an
+Entry, Blokada aplikacji is App lock, Kamuflaż i szybkie wyjście is disguise and quick
+exit, Kamienie milowe are Milestones. Where the app has no Polish word for something
+the site needs, ticket 05 decides it and the decision goes back into this file.
+
+**What does not carry across:** the English "words to avoid" list is a list of English
+words. Polish has its own marketing tells, its own calques from English, and its own
+way of sounding machine-translated, and `humanizer-pl` is the authority on them.
 
 ## Evidence
 
@@ -295,9 +356,11 @@ document has to be specific enough to argue with.
 ## Claims and Their Evidence
 
 Ticket 04 needs every claim on the privacy page annotated with the shipped behaviour
-it rests on. This is that annotation, extended to the rest of the site. Gate authority
-is the Journal repository's Phase 2 spec, under *Privacy and public claims*; where this
-table and that spec disagree, the spec wins.
+it rests on. Ticket 04 owns that page-level annotation; this table is the input it
+starts from, extended to cover the rest of the site. Neither is gate authority. That
+is the Journal repository's Phase 2 spec, under *Privacy and public claims*, and the
+`Status:` lines on its tickets. Where this table and those disagree, they win, and
+this table is the thing that was out of date.
 
 **Available now.** Phase 1 is complete in the Journal repository.
 
@@ -313,20 +376,22 @@ table and that spec disagree, the spec wins.
 | Lab results get no reference range and no interpretation | Shipped, and a deliberate design decision |
 | Daylio CSV import, merge only, with a preview before anything is written | Shipped |
 | Plain CSV and JSON export behind an explicit warning | Shipped |
-| English and Polish | Shipped message catalogues |
+| Disguise mode and quick exit, on the web | Journal ticket 15: "They are implemented for the web today." The tab title and icon go neutral and quick exit blanks the tab. Claimable for the web only, and never phrased so it reads as covering Android |
+| English and Polish | Shipped message catalogues. See the Polish note above: the shipped Polish is not uniformly gender-neutral, so "available in Polish" is safe and "written for you" is not |
 | Free software under GPLv3 | `LICENSE` in the Journal repository. The "you can read the source" phrasing additionally needs that repository to actually be public |
 
 **Blocked until the named ticket ships.** Draft the copy, stage the publication.
 
 | Claim | Unblocked by |
 |---|---|
+| The app runs on Android at all | Journal ticket 11: "there is no Android project in the repository". This blocks every Android sentence on the site, not only the store links, and it is the easiest one to publish by accident because the overview describes the finished product |
 | The Journal is encrypted at rest, naming what is covered and any web and Android difference | Journal ticket 09, and its gate: a copy of closed persistent files reveals no protected text, numbers, Reminder titles, photos or thumbnails without the unlock secret |
 | A Journal passphrase is required again after the session ends, and cannot be recovered | Journal tickets 09 and 10 |
-| Android protects the key through the Keystore | Journal ticket 13 |
+| Android protects the key through the Keystore | Journal tickets 11 and 13 |
 | Works offline, and installs from the browser | Journal ticket 03. There is no service worker today, so neither is true yet |
-| Reminders and the daily check-in | Journal ticket 14 |
-| Disguise mode and quick exit | Journal ticket 15. The web tab-title behaviour is already wired, but the feature is not finished and the site should wait for the whole of it |
-| Scheduled encrypted backup to a folder you pick | Journal ticket 16 |
+| Reminders and the daily check-in | Journal tickets 11 and 14. Both are Android-only, so the Android block applies first |
+| Disguise mode and quick exit, on Android | Journal tickets 11 and 15. The launcher alias is the Android half; the web half is already available above |
+| Scheduled encrypted backup to a folder you pick | Journal tickets 11 and 16. Android only |
 | Available on Google Play, F-Droid, Aurora or Obtainium | Journal ticket 18. Until then the site shows availability status and never a link, per this repository's ticket 06 |
 | Anything the privacy policy says | Journal ticket 21, which writes the policy. This site presents it and may not run ahead of it |
 
@@ -340,14 +405,15 @@ table and that spec disagree, the spec wins.
 | Any medical claim, reference range, dosage or clinical guidance | Out of scope for the product, not just for the copy |
 | Invented ratings, offers, testimonials or counts | Structured data included. Ticket 07 marks up only what the page actually claims |
 
-**Cross-repository note for the Journal.** The shipped app's About screen currently
-reads "This app makes no network requests." The Phase 2 spec forbids that sentence
-unqualified on this site, and the reasoning applies at least as strongly inside a web
-app that was itself just downloaded. Worth raising against Journal ticket 21 rather
-than quietly writing around it here.
+Two of those rows describe sentences the Journal itself currently uses, which is why
+they are worth stating rather than assuming. Its About screen reads "This app makes
+no network requests", and its Polish note placeholder assumes a woman is writing.
+Both belong to the Journal repository, tickets 21 and 19. Neither is a licence for
+this site to repeat them.
 
 ## Changelog
 
 *Newest first. One line per revision: what changed and why.*
 
+- v2 (2026-08-12) - Corrected the claim table after review: added the Android row, since no Android project exists and the old table gated only the store links; moved web disguise and quick exit to available, which ticket 15 says are shipped. Replaced the glossary definitions with a traps-only table pointing at CONTEXT.md. Added the Polish voice section that ticket 05 needs.
 - v1 (2026-08-12) - Initial context. Audience, jobs, objections, voice and vocabulary for the landing site, plus the claim table that gates every later content ticket.
