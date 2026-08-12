@@ -8,6 +8,7 @@
     "node": ">=23.6"
   },
   "scripts": {
+    "prepare": "svelte-kit sync",
     "dev": "vite dev",
     "build": "vite build && node scripts/crawl-policy.mjs",
     "build:production": "SITE_ENV=production npm run build",
