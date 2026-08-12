@@ -19,8 +19,8 @@
   /* Subset to Latin + Latin Extended-A (the Polish diacritics live there),
      variable weight 300-700. The file and its OFL licence are in
      static/fonts/. */
-  font-family: 'Space Grotesk';
-  src: url('/fonts/space-grotesk.woff2') format('woff2');
+  font-family: 'DM Sans';
+  src: url('/fonts/dm-sans.woff2') format('woff2');
   font-weight: 300 700;
   font-display: swap;
 }
@@ -78,7 +78,7 @@
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) {
     --theme: dark;
-    --page: #0c0f16;
+    --page: #0f0b14;
     --surface: #141824;
     --panel: rgba(20, 24, 36, 0.6);
     --ink: #f2f3f7;
@@ -95,8 +95,8 @@
     --tint-pink: rgba(245, 169, 184, 0.16);
     --stroke-mid: rgba(242, 243, 247, 0.85);
     --glow: rgba(245, 169, 184, 0.22);
-    --header: rgba(12, 15, 22, 0.72);
-    --scrim: rgba(12, 15, 22, 0.86);
+    --header: rgba(15, 11, 20, 0.72);
+    --scrim: rgba(15, 11, 20, 0.86);
     color-scheme: dark;
   }
 }
@@ -105,7 +105,7 @@
    dark paint the same page. A value changed in one is changed in the other. */
 :root[data-theme='dark'] {
   --theme: dark;
-  --page: #0c0f16;
+  --page: #0f0b14;
   --surface: #141824;
   --panel: rgba(20, 24, 36, 0.6);
   --ink: #f2f3f7;
@@ -122,8 +122,8 @@
   --tint-pink: rgba(245, 169, 184, 0.16);
   --stroke-mid: rgba(242, 243, 247, 0.85);
   --glow: rgba(245, 169, 184, 0.22);
-  --header: rgba(12, 15, 22, 0.72);
-  --scrim: rgba(12, 15, 22, 0.86);
+  --header: rgba(15, 11, 20, 0.72);
+  --scrim: rgba(15, 11, 20, 0.86);
   color-scheme: dark;
 }
 
@@ -135,7 +135,7 @@ body {
   margin: 0;
   background: var(--page);
   color: var(--ink);
-  font-family: 'Space Grotesk', system-ui, sans-serif;
+  font-family: 'DM Sans', system-ui, sans-serif;
   font-size: 1.0625rem;
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
@@ -257,7 +257,7 @@ a {
   background-size: 160% 100%;
   background-position: 0% 0%;
   border: none;
-  border-radius: 999px;
+  border-radius: 1rem;
   color: var(--ink-on-accent);
   font-weight: 600;
   font-size: 1.0625rem;
@@ -481,10 +481,21 @@ a {
     }
   }
 
-  .flag-stroke path {
+  .flag-stroke .flag-base,
+  .flag-stroke .flag-trace {
     stroke-dasharray: 1;
     animation: draw 1.2s cubic-bezier(0.16, 1, 0.3, 1) both;
     animation-delay: 420ms;
+  }
+
+  .flag-stroke[data-motion='on'] .flag-base {
+    stroke-dasharray: none;
+    stroke-dashoffset: 0;
+    animation: none;
+  }
+
+  .flag-stroke[data-motion='on'] .flag-trace {
+    animation: none;
   }
 
   /* Hierarchy: the tour is the one place the page stops advancing and asks to

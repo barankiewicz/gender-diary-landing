@@ -118,7 +118,7 @@ test('only the two known things are parsed before the policy arrives', async () 
 
     const links = unpoliced.match(/<link/g) ?? [];
     assert.equal(links.length, 1, `${path} loads something ungoverned beyond the font`);
-    assert.match(unpoliced, /space-grotesk/, `${path}: the ungoverned load is not the font`);
+    assert.match(unpoliced, /dm-sans/, `${path}: the ungoverned load is not the font`);
   }
 });
 

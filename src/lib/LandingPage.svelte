@@ -1,11 +1,103 @@
 <script lang="ts">
+  import { animate } from 'motion';
+  import { onMount } from 'svelte';
   import PageShell from '$lib/PageShell.svelte';
   import Prose from '$lib/Prose.svelte';
   import { JOURNAL_URL, messages, pathFor, type Locale } from '$lib/site';
 
   let { locale }: { locale: Locale } = $props();
 
+  let hero: HTMLElement | null = null;
+  let flagStroke: SVGSVGElement | null = null;
+  let flagInk: SVGGElement | null = null;
+  let flagPath: SVGPathElement | null = null;
+
   const m = $derived(messages[locale]);
+
+  onMount(() => {
+    if (!hero || !flagStroke || !flagInk || !flagPath) return;
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+    const heroNode = hero;
+
+    flagStroke.dataset.motion = 'on';
+    flagPath.style.strokeDasharray = '1';
+    flagPath.style.strokeDashoffset = '1';
+
+    const pointerEvent = 'gd-hero-pointer';
+    let disposed = false;
+    let breatheControls: { stop: () => void } | null = null;
+    let pointerControls: { stop: () => void } | null = null;
+
+    const drawThenBreathe = async () => {
+      await animate(flagPath, { strokeDashoffset: [1, 0] }, { duration: 1.2, ease: [0.16, 1, 0.3, 1] })
+        .finished;
+      if (disposed) return;
+      breatheControls = animate(
+        flagPath,
+        {
+          strokeWidth: [3, 3.35, 3],
+          opacity: [1, 0.92, 1],
+        },
+        { duration: 6.5, ease: 'easeInOut', repeat: Infinity },
+      );
+    };
+
+    void drawThenBreathe();
+
+    const emitPointer = (x: number, y: number, active: boolean) => {
+      window.dispatchEvent(new CustomEvent(pointerEvent, { detail: { x, y, active } }));
+    };
+
+    const normalise = (event: PointerEvent) => {
+      const rect = heroNode.getBoundingClientRect();
+      const rawX = ((event.clientX - rect.left) / rect.width - 0.5) * 2;
+      const rawY = ((event.clientY - rect.top) / rect.height - 0.5) * 2;
+      return {
+        x: Math.max(-1, Math.min(1, rawX)),
+        y: Math.max(-1, Math.min(1, rawY)),
+      };
+    };
+
+    const settleFlag = (x: number, y: number) => {
+      pointerControls?.stop();
+      pointerControls = animate(
+        flagInk,
+        {
+          x: x * 9,
+          y: y * 4,
+          scaleX: 1 + Math.abs(x) * 0.025,
+          scaleY: 1 - Math.min(0.03, Math.abs(y) * 0.03),
+        },
+        { type: 'spring', stiffness: 260, damping: 30, mass: 0.45 },
+      );
+    };
+
+    const onPointerMove = (event: PointerEvent) => {
+      const { x, y } = normalise(event);
+      emitPointer(x, y, true);
+      settleFlag(x, y);
+    };
+
+    const onPointerLeave = () => {
+      emitPointer(0, 0, false);
+      settleFlag(0, 0);
+    };
+
+    heroNode.addEventListener('pointermove', onPointerMove, { passive: true });
+    heroNode.addEventListener('pointerleave', onPointerLeave);
+    heroNode.addEventListener('pointercancel', onPointerLeave);
+
+    return () => {
+      disposed = true;
+      breatheControls?.stop();
+      pointerControls?.stop();
+      heroNode.removeEventListener('pointermove', onPointerMove);
+      heroNode.removeEventListener('pointerleave', onPointerLeave);
+      heroNode.removeEventListener('pointercancel', onPointerLeave);
+      emitPointer(0, 0, false);
+    };
+  });
 </script>
 
 <PageShell {locale} page="landing" title={m.pageTitle}>
@@ -14,7 +106,7 @@
        point at this page until each channel has an artifact (Journal ticket
        18). The acquisition section below keeps the honest wording: nothing on
        Android exists yet. -->
-  <div class="hero">
+  <div class="hero" bind:this={hero}>
     <div class="hero-inner scrim">
       <h1 class="enter shimmer" style:--enter={0}>{m.pageTitle}</h1>
       <!-- Shrink-wrapped around the headline so the stroke below is exactly
@@ -37,10 +129,12 @@
              somebody has to measure again after every edit to the `d`. -->
         <svg
           class="flag-stroke"
+          data-motion="off"
           viewBox="0 0 400 14"
           preserveAspectRatio="none"
           aria-hidden="true"
           focusable="false"
+          bind:this={flagStroke}
         >
           <defs>
             <!-- userSpaceOnUse, and that is load-bearing rather than a
@@ -63,14 +157,26 @@
               <stop class="stop-end" offset="100%" />
             </linearGradient>
           </defs>
-          <path
-            pathLength="1"
-            d="M2 7 L 398 7"
-            fill="none"
-            stroke="url(#flag-stroke-gradient)"
-            stroke-width="3"
-            stroke-linecap="round"
-          />
+          <g class="flag-ink" bind:this={flagInk}>
+            <path
+              class="flag-base"
+              d="M2 7 L 398 7"
+              fill="none"
+              stroke="url(#flag-stroke-gradient)"
+              stroke-width="3"
+              stroke-linecap="round"
+            />
+            <path
+              class="flag-trace"
+              pathLength="1"
+              d="M2 7 L 398 7"
+              fill="none"
+              stroke="url(#flag-stroke-gradient)"
+              stroke-width="3"
+              stroke-linecap="round"
+              bind:this={flagPath}
+            />
+          </g>
         </svg>
       </div>
 
@@ -365,6 +471,16 @@
     overflow: visible;
   }
 
+  .flag-ink {
+    transform-box: fill-box;
+    transform-origin: 50% 50%;
+    will-change: transform;
+  }
+
+  .flag-base {
+    opacity: 0.58;
+  }
+
   .headline {
     font-size: clamp(min(2.4rem, 12vw), 7vw, 4.75rem);
     font-weight: 600;
@@ -417,7 +533,16 @@
     font-weight: 500;
     text-decoration: none;
     overflow: clip;
+    transform: rotate(var(--tilt, 0deg));
     transition: border-color 0.25s;
+  }
+
+  .badges li:nth-child(odd) .badge {
+    --tilt: -0.7deg;
+  }
+
+  .badges li:nth-child(3n) .badge {
+    --tilt: 0.6deg;
   }
 
   .badge:hover {
@@ -433,11 +558,11 @@
     }
 
     .badge:hover {
-      transform: translateY(-2px);
+      transform: rotate(var(--tilt, 0deg)) translateY(-2px);
     }
 
     .badge:active {
-      transform: scale(0.97);
+      transform: rotate(var(--tilt, 0deg)) scale(0.97);
     }
   }
 
@@ -452,8 +577,8 @@
   /* ---- Privacy hand-off --------------------------------------------------- */
 
   .panel {
-    border-radius: 1.25rem;
-    padding: clamp(1.5rem, 4vw, 2.5rem);
+    border-radius: 1rem;
+    padding: clamp(1.75rem, 4.6vw, 2.9rem);
     border: 1px solid transparent;
     background:
       linear-gradient(var(--surface), var(--surface)) padding-box,
@@ -593,6 +718,16 @@
   .tour-strip li {
     flex: 0 0 min(19rem, 78vw);
     scroll-snap-align: start;
+  }
+
+  @media (min-width: 60rem) {
+    .tour-strip li:nth-child(odd) {
+      margin-top: clamp(0.45rem, 1.3vw, 1rem);
+    }
+
+    .tour-strip li:nth-child(3n) {
+      margin-top: clamp(-0.4rem, -0.9vw, -0.2rem);
+    }
   }
 
   /* The aspect ratio is declared now and the picture arrives later, so
