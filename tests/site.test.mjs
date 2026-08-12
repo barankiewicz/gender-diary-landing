@@ -2076,6 +2076,101 @@ for (const scheme of ['light', 'dark']) {
           `the ${where} of the stroke resolved to black, so a var() did not reach it`,
         );
       }
+
+      /* And then the pixels, because every assertion above passed while there
+         was no line on the page at all. A linearGradient defaults to
+         objectBoundingBox units, the bounding box of a horizontal line has
+         zero height, and an unresolvable gradient means the path is not
+         painted: correct stops, correct animation, nothing drawn. Only
+         looking at the rendered page catches that. */
+      const decoder = await pixelDecoder();
+      try {
+        /* The draw takes 1.2s behind a 420ms delay, and a stroke measured
+           half way through is missing its right-hand end by design. */
+        await page.evaluate(
+          () =>
+            new Promise((resolve) => {
+              const onClock = document
+                .getAnimations()
+                .filter((animation) => animation.timeline === document.timeline)
+                .filter((animation) => animation.effect?.getTiming().iterations !== Infinity);
+              Promise.allSettled(onClock.map((animation) => animation.finished)).then(resolve);
+            }),
+        );
+        await nextFrame(page);
+
+        const where = await page.evaluate(() => {
+          const rect = document.querySelector('.flag-stroke').getBoundingClientRect();
+          return { x: rect.x, y: rect.y + rect.height / 2, w: rect.width };
+        });
+
+        const pageColour = await page.evaluate(() => {
+          const probe = document.createElement('span');
+          probe.style.color = getComputedStyle(document.documentElement)
+            .getPropertyValue('--page')
+            .trim();
+          document.body.append(probe);
+          const resolved = getComputedStyle(probe).color.match(/\d+/g).map(Number);
+          probe.remove();
+          return resolved;
+        });
+
+        const shot = (await page.screenshot()).toString('base64');
+        const along = await decoder.page.evaluate(
+          async ({ shot, where, pageColour }) => {
+            const image = new Image();
+            image.src = `data:image/png;base64,${shot}`;
+            await image.decode();
+            const canvas = document.createElement('canvas');
+            canvas.width = image.naturalWidth;
+            canvas.height = image.naturalHeight;
+            const context = canvas.getContext('2d', { willReadFrequently: true });
+            context.drawImage(image, 0, 0);
+            /* A short vertical sweep at each point, because the rule is about
+               3px tall inside a 14px box and its exact row depends on how the
+               viewBox scales. The winner is the pixel furthest from the page
+               colour rather than the brightest: on a light page the brightest
+               pixel in the sweep is the background, which is how this first
+               passed in dark and failed in light. */
+            const apart = ([r, g, b]) =>
+              Math.abs(r - pageColour[0]) + Math.abs(g - pageColour[1]) + Math.abs(b - pageColour[2]);
+            return [0.08, 0.5, 0.92].map((across) => {
+              const x = Math.round(where.x + where.w * across);
+              let best = null;
+              for (let dy = -6; dy <= 6; dy++) {
+                const [r, g, b] = context.getImageData(x, Math.round(where.y + dy), 1, 1).data;
+                if (!best || apart([r, g, b]) > apart([best.r, best.g, best.b])) best = { r, g, b };
+              }
+              return best;
+            });
+          },
+          { shot, where, pageColour },
+        );
+
+        for (const [index, pixel] of along.entries()) {
+          const apart =
+            Math.abs(pixel.r - pageColour[0]) +
+            Math.abs(pixel.g - pageColour[1]) +
+            Math.abs(pixel.b - pageColour[2]);
+          assert.ok(
+            apart > 40,
+            `nothing is painted ${['near the start', 'in the middle', 'near the end'][index]} of the stroke: found rgb(${pixel.r}, ${pixel.g}, ${pixel.b}) against a page of rgb(${pageColour.join(', ')})`,
+          );
+        }
+
+        /* Blue at one end and pink at the other, which is the gradient
+           actually running along the line rather than one flat colour. */
+        assert.ok(
+          along[0].b > along[0].r,
+          `the start of the stroke is not the blue end: rgb(${along[0].r}, ${along[0].g}, ${along[0].b})`,
+        );
+        assert.ok(
+          along[2].r > along[2].b,
+          `the end of the stroke is not the pink end: rgb(${along[2].r}, ${along[2].g}, ${along[2].b})`,
+        );
+      } finally {
+        await decoder.close();
+      }
     } finally {
       await context.close();
     }

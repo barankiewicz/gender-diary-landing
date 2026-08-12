@@ -43,7 +43,21 @@
           focusable="false"
         >
           <defs>
-            <linearGradient id="flag-stroke-gradient" x1="0" y1="0" x2="1" y2="0">
+            <!-- userSpaceOnUse, and that is load-bearing rather than a
+               preference. A linearGradient defaults to objectBoundingBox
+               units, and the bounding box of a perfectly horizontal line has
+               zero height, which makes the gradient unresolvable: the path is
+               then not painted at all. The line simply was not there. In user
+               space the coordinates are the viewBox's own, so 0 to 400 is the
+               full width. -->
+          <linearGradient
+            id="flag-stroke-gradient"
+            gradientUnits="userSpaceOnUse"
+            x1="0"
+            y1="0"
+            x2="400"
+            y2="0"
+          >
               <stop class="stop-start" offset="0%" />
               <stop class="stop-mid" offset="50%" />
               <stop class="stop-end" offset="100%" />
