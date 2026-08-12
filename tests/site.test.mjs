@@ -902,8 +902,8 @@ const TITLES = {
   '/': 'Gender Diary',
   '/en/': 'Gender Diary',
   '/pl/': 'Gender Diary',
-  '/en/privacy/': 'What Gender Diary protects, and what it does not',
-  '/pl/privacy/': 'Co Gender Diary chroni, a czego nie chroni',
+  '/en/privacy/': PRIVACY_TITLE.en,
+  '/pl/privacy/': PRIVACY_TITLE.pl,
 };
 
 /** The description of each page, character for character. This is where the
@@ -913,7 +913,7 @@ const TITLES = {
     the page a visitor asking for neither language is about to be sent to. */
 const DESCRIPTIONS = {
   '/en/':
-    'A diary for tracking gender transition. An entry holds a mood, a note, photos and scales you name yourself. It stays on your device, and there is no account.',
+    'A diary for tracking gender transition. An entry holds a mood, a note, tags, photos and your own scales. It stays on your device, and there is no account.',
   '/pl/':
     'Dziennik tranzycji. We wpisie mieści się nastrój, notatka, tagi, zdjęcia i skale, które nazywasz po swojemu. Zostaje na twoim urządzeniu, konta nie zakładasz.',
   '/en/privacy/':
@@ -930,9 +930,10 @@ DESCRIPTIONS['/'] = DESCRIPTIONS['/en/'];
     words below are what an SEO pass would put in a title and what this site
     puts in a description instead. */
 const NOT_IN_A_TITLE = [
-  'transition',
-  'tranzycj',
+  /* "trans" covers "transition" as well, and "tranzycj" is here because the
+     Polish word does not start with it. */
   'trans',
+  'tranzycj',
   'journal',
   'dziennik',
   'mood',
@@ -1117,13 +1118,15 @@ test('structured data describes the app, and claims nothing the page does not', 
       assert.equal(blocks.length, 1, `/${locale}/: expected exactly one JSON-LD block`);
 
       const data = JSON.parse(blocks[0]);
+      /* Exhaustive on purpose: the assertion is as much about what is absent
+         as about what is here, and a property added without a sentence on the
+         page behind it fails this rather than passing a subset check. */
       assert.deepEqual(data, {
         '@context': 'https://schema.org',
         '@type': 'WebApplication',
         name: 'Gender Diary',
         url: JOURNAL_URL,
         description: DESCRIPTIONS[`/${locale}/`],
-        applicationCategory: 'LifestyleApplication',
         inLanguage: ['en', 'pl'],
       });
 

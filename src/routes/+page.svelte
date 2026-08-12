@@ -37,17 +37,18 @@
      fallback locale's, which is also the page a visitor asking for neither
      language is about to be sent to. No structured data: this page shows a
      name and two language links, and there is nothing here to describe. */
+  const description = messages[FALLBACK_LOCALE].meta.landing.description;
   const gateway = socialTags({
     locale: FALLBACK_LOCALE,
     url: `${SITE_ORIGIN}/`,
     title: messages[FALLBACK_LOCALE].pageTitle,
-    description: messages[FALLBACK_LOCALE].meta.landing.description,
+    description,
   });
 </script>
 
 <svelte:head>
   <title>Gender Diary</title>
-  <meta name="description" content={gateway['og:description']} />
+  <meta name="description" content={description} />
   <link rel="canonical" href={`${SITE_ORIGIN}/`} />
   {#each LOCALES as locale (locale)}
     <link rel="alternate" hreflang={locale} href={SITE_ORIGIN + pathFor(locale)} />

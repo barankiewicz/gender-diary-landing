@@ -6,11 +6,10 @@
     LOCALES,
     SITE_ORIGIN,
     defaultPathFor,
-    jsonLdScript,
     messages,
     pathFor,
     socialTags,
-    structuredData,
+    structuredDataScript,
     type Locale,
     type Page,
   } from '$lib/site';
@@ -43,8 +42,8 @@
   <!-- The title is the page's own name and stays that short deliberately.
        It is the one piece of metadata a reader cannot avoid: it goes into a
        browser history entry, a tab, a bookmark and the top line of a
-       preview, none of which they chose. So it says the product's name, and
-       on this page the privacy page's own heading, and it does not say what
+       preview, none of which they chose. So it says the product's name, or
+       on the privacy page that page's own heading, and it does not say what
        kind of app this is. An SEO pass would want "a transition journal that
        stays on your device" up here, where the words a person searches with
        carry the most weight; that is the cost, and it is paid on purpose
@@ -79,11 +78,11 @@
   <!-- Structured data goes where the page describes the app, and only there.
        The privacy page describes what the app does not do, which is not a
        software listing; a breadcrumb would be markup for a trail this site
-       does not show a visitor. `structuredData` carries the rest of the
+       does not show a visitor. `structuredDataScript` carries the rest of the
        reasoning, including what the vocabulary offers that this page will
        not claim. -->
   {#if page === 'landing'}
-    {@html jsonLdScript(structuredData(locale))}
+    {@html structuredDataScript(locale)}
   {/if}
 </svelte:head>
 

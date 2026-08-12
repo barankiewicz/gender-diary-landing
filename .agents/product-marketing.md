@@ -449,19 +449,22 @@ supplied them: a description is written for a search result and a link preview, 
 blockquote in the copy files is that. Like the headings above, they have not been
 through `copywriting` or `copy-editing`, and the Polish joins the review ticket 05 owes.
 Every clause is built on a claim from the tables at the end of this document, and the
-Polish was written as Polish from those claims: „konta nie zakładasz" and „które
-nazywasz po swojemu" come from the shipped Polish catalogue rather than from the English
+Polish was written as Polish from those claims: „konta nie zakładasz” and „które
+nazywasz po swojemu” come from the shipped Polish catalogue rather than from the English
 column.
 
 | Page | English | Polish |
 |---|---|---|
-| Landing | A diary for tracking gender transition. An entry holds a mood, a note, photos and scales you name yourself. It stays on your device, and there is no account. | Dziennik tranzycji. We wpisie mieści się nastrój, notatka, tagi, zdjęcia i skale, które nazywasz po swojemu. Zostaje na twoim urządzeniu, konta nie zakładasz. |
+| Landing | A diary for tracking gender transition. An entry holds a mood, a note, tags, photos and your own scales. It stays on your device, and there is no account. | Dziennik tranzycji. We wpisie mieści się nastrój, notatka, tagi, zdjęcia i skale, które nazywasz po swojemu. Zostaje na twoim urządzeniu, konta nie zakładasz. |
 | Privacy | Where your journal is, what app lock does and does not do, what is not encrypted yet, and what a web host can see. | Gdzie jest twój dziennik, co daje blokada aplikacji i czego nie daje, czego aplikacja jeszcze nie szyfruje i co widzi serwer WWW. |
 | Card alt | The words Gender Diary on a dark background. | Napis Gender Diary na ciemnym tle. |
 
 App lock appears in the privacy description with its counterweight in the same clause,
 because the claim table requires that everywhere it is named. The landing description
-says nothing about Android, offline use or encryption at rest.
+says nothing about Android, offline use or encryption at rest. Both landing descriptions
+name the same five parts of an entry, which is worth stating because the first draft did
+not: the English had lost tags to the 160-character ceiling a search result imposes, and
+"your own scales" instead of "scales you name yourself" is what bought the room back.
 
 **Titles stay short, and that is what pays for spec story 37.** A description is read in
 a search result and in a preview somebody chose to send. A title is read in a browser
@@ -477,6 +480,13 @@ list of words that would.
 **The card is the wordmark and nothing else,** for the same reason. It is a local PNG,
 rendered by `scripts/social-card.mjs` and committed, and it shows no journal, invented or
 otherwise. What the app is goes in `og:description` next to it.
+
+That is spec story 31 partly given up for story 37, and it is the one decision in this
+ticket that a reviewer should not settle. Story 31 wants a card that describes the app;
+what the card describes is the name, and only the description underneath it says more.
+The alternative is a line of the subheadline set on the picture, which reads better in a
+timeline and says "transition journal" to whoever is looking over the shoulder of the
+person the link was sent to. Ticket 07 chose the quieter card and flagged the choice.
 
 **The source block cannot be published, and its gate half-says so.** `content/*/landing.md`
 marks it *Gate: shipped as far as the licence goes*, then names a condition that has not
