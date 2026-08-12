@@ -1,11 +1,103 @@
 <script lang="ts">
+  import { animate } from 'motion';
+  import { onMount } from 'svelte';
   import PageShell from '$lib/PageShell.svelte';
   import Prose from '$lib/Prose.svelte';
   import { JOURNAL_URL, messages, pathFor, type Locale } from '$lib/site';
 
   let { locale }: { locale: Locale } = $props();
 
+  let hero: HTMLElement | null = null;
+  let flagStroke: SVGSVGElement | null = null;
+  let flagInk: SVGGElement | null = null;
+  let flagPath: SVGPathElement | null = null;
+
   const m = $derived(messages[locale]);
+
+  onMount(() => {
+    if (!hero || !flagStroke || !flagInk || !flagPath) return;
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+    const heroNode = hero;
+
+    flagStroke.dataset.motion = 'on';
+    flagPath.style.strokeDasharray = '1';
+    flagPath.style.strokeDashoffset = '1';
+
+    const pointerEvent = 'gd-hero-pointer';
+    let disposed = false;
+    let breatheControls: { stop: () => void } | null = null;
+    let pointerControls: { stop: () => void } | null = null;
+
+    const drawThenBreathe = async () => {
+      await animate(flagPath, { strokeDashoffset: [1, 0] }, { duration: 1.2, ease: [0.16, 1, 0.3, 1] })
+        .finished;
+      if (disposed) return;
+      breatheControls = animate(
+        flagPath,
+        {
+          strokeWidth: [3, 3.35, 3],
+          opacity: [1, 0.92, 1],
+        },
+        { duration: 6.5, ease: 'easeInOut', repeat: Infinity },
+      );
+    };
+
+    void drawThenBreathe();
+
+    const emitPointer = (x: number, y: number, active: boolean) => {
+      window.dispatchEvent(new CustomEvent(pointerEvent, { detail: { x, y, active } }));
+    };
+
+    const normalise = (event: PointerEvent) => {
+      const rect = heroNode.getBoundingClientRect();
+      const rawX = ((event.clientX - rect.left) / rect.width - 0.5) * 2;
+      const rawY = ((event.clientY - rect.top) / rect.height - 0.5) * 2;
+      return {
+        x: Math.max(-1, Math.min(1, rawX)),
+        y: Math.max(-1, Math.min(1, rawY)),
+      };
+    };
+
+    const settleFlag = (x: number, y: number) => {
+      pointerControls?.stop();
+      pointerControls = animate(
+        flagInk,
+        {
+          x: x * 9,
+          y: y * 4,
+          scaleX: 1 + Math.abs(x) * 0.025,
+          scaleY: 1 - Math.min(0.03, Math.abs(y) * 0.03),
+        },
+        { type: 'spring', stiffness: 260, damping: 30, mass: 0.45 },
+      );
+    };
+
+    const onPointerMove = (event: PointerEvent) => {
+      const { x, y } = normalise(event);
+      emitPointer(x, y, true);
+      settleFlag(x, y);
+    };
+
+    const onPointerLeave = () => {
+      emitPointer(0, 0, false);
+      settleFlag(0, 0);
+    };
+
+    heroNode.addEventListener('pointermove', onPointerMove, { passive: true });
+    heroNode.addEventListener('pointerleave', onPointerLeave);
+    heroNode.addEventListener('pointercancel', onPointerLeave);
+
+    return () => {
+      disposed = true;
+      breatheControls?.stop();
+      pointerControls?.stop();
+      heroNode.removeEventListener('pointermove', onPointerMove);
+      heroNode.removeEventListener('pointerleave', onPointerLeave);
+      heroNode.removeEventListener('pointercancel', onPointerLeave);
+      emitPointer(0, 0, false);
+    };
+  });
 </script>
 
 <PageShell {locale} page="landing" title={m.pageTitle}>
@@ -14,7 +106,7 @@
        point at this page until each channel has an artifact (Journal ticket
        18). The acquisition section below keeps the honest wording: nothing on
        Android exists yet. -->
-  <div class="hero">
+  <div class="hero" bind:this={hero}>
     <div class="hero-inner scrim">
       <h1 class="enter shimmer" style:--enter={0}>{m.pageTitle}</h1>
       <!-- Shrink-wrapped around the headline so the stroke below is exactly
@@ -37,10 +129,12 @@
              somebody has to measure again after every edit to the `d`. -->
         <svg
           class="flag-stroke"
+          data-motion="off"
           viewBox="0 0 400 14"
           preserveAspectRatio="none"
           aria-hidden="true"
           focusable="false"
+          bind:this={flagStroke}
         >
           <defs>
             <!-- userSpaceOnUse, and that is load-bearing rather than a
@@ -63,14 +157,26 @@
               <stop class="stop-end" offset="100%" />
             </linearGradient>
           </defs>
-          <path
-            pathLength="1"
-            d="M2 7 L 398 7"
-            fill="none"
-            stroke="url(#flag-stroke-gradient)"
-            stroke-width="3"
-            stroke-linecap="round"
-          />
+          <g class="flag-ink" bind:this={flagInk}>
+            <path
+              class="flag-base"
+              d="M2 7 L 398 7"
+              fill="none"
+              stroke="url(#flag-stroke-gradient)"
+              stroke-width="3"
+              stroke-linecap="round"
+            />
+            <path
+              class="flag-trace"
+              pathLength="1"
+              d="M2 7 L 398 7"
+              fill="none"
+              stroke="url(#flag-stroke-gradient)"
+              stroke-width="3"
+              stroke-linecap="round"
+              bind:this={flagPath}
+            />
+          </g>
         </svg>
       </div>
 
@@ -87,40 +193,25 @@
     </div>
   </div>
 
-  <!-- Ticket 17's composition. Every section below is the same two-column
-       split - a rail that sticks while its content scrolls past - and every
-       one of them fills the right column with a different object. Ticket 09
-       shipped seven identical centred boxes, each an h2 on top of its
-       content, and that repetition rather than the animation count is what
-       made the page read corporate. The rail is also what survives Polish:
-       it is a fixed width and the prose column absorbs the extra lines.
-
-       The one exception is the tour, which breaks out on purpose. One
-       deliberate escape reads as emphasis; the rail everywhere else is what
-       keeps it from reading as an accident. -->
-
-  <section class="split scrim">
-    <div class="rail">
+  <section class="opening scrim">
+    <div class="opening-title reveal">
       <h2>{m.sectionOverview}</h2>
-      <div class="standfirst"><Prose paragraphs={m.overview.slice(0, 1)} /></div>
+      <span class="section-mark" aria-hidden="true"></span>
     </div>
-    <div class="body lede">
+    <div class="opening-copy">
+      <div class="opening-lede"><Prose paragraphs={m.overview.slice(0, 1)} reveal /></div>
       <Prose paragraphs={m.overview.slice(1)} reveal />
     </div>
   </section>
 
-  <section class="split scrim">
-    <div class="rail">
+  <section class="privacy-note scrim">
+    <div class="privacy-title reveal">
       <h2>{m.sectionPrivacy}</h2>
-      <div class="standfirst"><Prose paragraphs={m.privacyHandoff.slice(0, 1)} /></div>
+      <div class="standfirst"><Prose paragraphs={m.privacyHandoff.slice(0, 1)} reveal /></div>
     </div>
-    <div class="body">
-      <div class="panel reveal">
-        <Prose paragraphs={m.privacyHandoff.slice(1)} />
-        <!-- The link is the privacy page's own title, so the reader knows what
-             they are opening before they open it. -->
-        <p class="more-line"><a class="more" href={pathFor(locale, 'privacy')}>{m.privacyPage.title}</a></p>
-      </div>
+    <div class="privacy-answer reveal">
+      <Prose paragraphs={m.privacyHandoff.slice(1)} />
+      <p class="more-line"><a class="more" href={pathFor(locale, 'privacy')}>{m.privacyPage.title}</a></p>
     </div>
   </section>
 
@@ -149,16 +240,17 @@
     </div>
   </section>
 
-  <section class="split scrim">
-    <div class="rail">
+  <section class="features scrim">
+    <div class="features-head">
       <h2>{m.sectionFeatures}</h2>
+      <span class="section-mark" aria-hidden="true"></span>
     </div>
-    <div class="body">
+    <div class="feature-groups">
       {#each m.features as group (group.group)}
         <!-- The groups are headed rather than run together because one of them
              opens by saying that everything in it is off until you turn it on,
              and that sentence is only true of its own group. -->
-        <div class="group">
+        <article class="group reveal">
           <h3>{group.group}</h3>
           <div class="entries">
             <!-- Rendered here rather than through Prose because this layout
@@ -174,24 +266,24 @@
               {/if}
             {/each}
           </div>
-        </div>
+        </article>
       {/each}
     </div>
   </section>
 
-  <section class="split scrim">
-    <div class="rail">
-      <h2>{m.sectionAcquisition}</h2>
-      <p class="standfirst">{m.acquisitionIntro}</p>
-    </div>
-    <div class="body">
+  <section class="acquisition-wrap scrim">
+    <div class="acquisition">
+      <div class="acquisition-head reveal">
+        <h2>{m.sectionAcquisition}</h2>
+        <p>{m.acquisitionIntro}</p>
+      </div>
       <!-- The primary action, again at the moment a reader has just finished
            deciding: a plain link, in this tab, to the URL and nothing appended
            to it. What may not ride along with it is on JOURNAL_URL in
            $lib/site. -->
       <p class="acquisition-action"><a class="cta" href={JOURNAL_URL}>{m.startJournal}</a></p>
 
-      <p class="android">{m.acquisitionAndroid}</p>
+      <p class="android reveal">{m.acquisitionAndroid}</p>
 
       <!-- The three that do not report an install to Google first, alphabetical
            among themselves, and Google Play last. Unlike the splash's badges,
@@ -210,43 +302,19 @@
     </div>
   </section>
 
-  <section class="split scrim">
-    <div class="rail">
+  <section class="support-section scrim">
+    <div class="support-title reveal">
       <h2>{m.sectionSupport}</h2>
     </div>
-    <div class="body support">
+    <div class="support reveal">
       <Prose paragraphs={m.support} reveal />
     </div>
   </section>
 </PageShell>
 
 <style>
-  /* ---- The rail ---------------------------------------------------------- */
-
-  /* One shape for every section, and a different object in the right column
-     of each. The rail is a fixed width so that Polish, which runs longer than
-     English, lengthens the prose column instead of squeezing the heading. */
-  .split {
-    max-width: 68rem;
-    margin: 0 auto;
-    padding: clamp(3rem, 8vh, 5.5rem) clamp(1rem, 4vw, 2.5rem) 0;
-    display: grid;
-    grid-template-columns: minmax(0, 17rem) minmax(0, 1fr);
-    gap: clamp(1.5rem, 5vw, 4.5rem);
-    align-items: start;
-  }
-
   section:last-of-type {
     padding-bottom: clamp(4rem, 10vh, 7rem);
-  }
-
-  /* 56px is the sticky header, and the rest is so the heading does not sit
-     against it. `align-items: start` above is what makes this stickable: a
-     stretched grid item is already as tall as its row and has nowhere to
-     stick to. */
-  .rail {
-    position: sticky;
-    top: calc(56px + 1.5rem);
   }
 
   h2 {
@@ -266,12 +334,7 @@
     font-size: 0.9375rem;
   }
 
-  .standfirst :global(p:last-child),
-  p.standfirst {
-    margin-bottom: 0;
-  }
-
-  .body > :global(p:last-child) {
+  .standfirst :global(p:last-child) {
     margin-bottom: 0;
   }
 
@@ -365,6 +428,16 @@
     overflow: visible;
   }
 
+  .flag-ink {
+    transform-box: fill-box;
+    transform-origin: 50% 50%;
+    will-change: transform;
+  }
+
+  .flag-base {
+    opacity: 0.58;
+  }
+
   .headline {
     font-size: clamp(min(2.4rem, 12vw), 7vw, 4.75rem);
     font-weight: 600;
@@ -417,7 +490,16 @@
     font-weight: 500;
     text-decoration: none;
     overflow: clip;
+    transform: rotate(var(--tilt, 0deg));
     transition: border-color 0.25s;
+  }
+
+  .badges li:nth-child(odd) .badge {
+    --tilt: -0.7deg;
+  }
+
+  .badges li:nth-child(3n) .badge {
+    --tilt: 0.6deg;
   }
 
   .badge:hover {
@@ -433,39 +515,12 @@
     }
 
     .badge:hover {
-      transform: translateY(-2px);
+      transform: rotate(var(--tilt, 0deg)) translateY(-2px);
     }
 
     .badge:active {
-      transform: scale(0.97);
+      transform: rotate(var(--tilt, 0deg)) scale(0.97);
     }
-  }
-
-  /* ---- Overview ---------------------------------------------------------- */
-
-  .lede :global(p) {
-    font-size: clamp(1.15rem, 2vw, 1.45rem);
-    line-height: 1.5;
-    max-width: 34ch;
-  }
-
-  /* ---- Privacy hand-off --------------------------------------------------- */
-
-  .panel {
-    border-radius: 1.25rem;
-    padding: clamp(1.5rem, 4vw, 2.5rem);
-    border: 1px solid transparent;
-    background:
-      linear-gradient(var(--surface), var(--surface)) padding-box,
-      linear-gradient(120deg, var(--blue), var(--pink)) border-box;
-  }
-
-  .panel :global(p) {
-    max-width: 60ch;
-  }
-
-  .panel .more-line {
-    margin: 1.5rem 0 0;
   }
 
   .more {
@@ -593,6 +648,16 @@
   .tour-strip li {
     flex: 0 0 min(19rem, 78vw);
     scroll-snap-align: start;
+  }
+
+  @media (min-width: 60rem) {
+    .tour-strip li:nth-child(odd) {
+      margin-top: clamp(0.45rem, 1.3vw, 1rem);
+    }
+
+    .tour-strip li:nth-child(3n) {
+      margin-top: clamp(-0.4rem, -0.9vw, -0.2rem);
+    }
   }
 
   /* The aspect ratio is declared now and the picture arrives later, so
@@ -771,21 +836,7 @@
     margin-top: 1.5rem;
   }
 
-  /* ---- Narrow ------------------------------------------------------------------ */
-
-  /* The rail stops being a rail. Below this the two columns stack, and a
-     heading that stuck to the top of the window while its own content
-     scrolled past would just be a heading in the way. */
   @media (max-width: 60rem) {
-    .split {
-      grid-template-columns: minmax(0, 1fr);
-      gap: 1.25rem;
-    }
-
-    .rail {
-      position: static;
-    }
-
     .standfirst {
       max-width: 60ch;
     }
@@ -798,6 +849,455 @@
   @media (max-width: 48rem) {
     .hero {
       min-height: 92dvh;
+    }
+  }
+
+  /* ---- Ticket 18: warmer editorial composition ------------------------- */
+
+  .hero-inner {
+    display: grid;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    align-items: end;
+    padding-top: clamp(2.5rem, 9vh, 6rem);
+    padding-bottom: clamp(3rem, 9vh, 6rem);
+  }
+
+  .hero-inner::after {
+    content: '';
+    grid-column: 11 / 13;
+    grid-row: 1 / 5;
+    align-self: stretch;
+    width: 1px;
+    justify-self: end;
+    background: linear-gradient(transparent, var(--pink), var(--blue), transparent);
+    opacity: 0.55;
+  }
+
+  .hero h1,
+  .headline-block,
+  .subheadline,
+  .hero-actions {
+    grid-column: 1 / 11;
+  }
+
+  .hero h1 {
+    margin-bottom: clamp(2rem, 6vh, 4.5rem);
+  }
+
+  .headline-block {
+    margin-bottom: clamp(1.5rem, 4vh, 2.5rem);
+  }
+
+  .headline {
+    max-width: 14ch;
+    font-size: clamp(min(2.75rem, 12vw), 7.7vw, 5.6rem);
+    font-weight: 580;
+    line-height: 0.98;
+    letter-spacing: -0.055em;
+  }
+
+  .flag-stroke {
+    height: 1rem;
+    margin-top: 0.6rem;
+  }
+
+  .subheadline {
+    max-width: 36ch;
+    margin-left: min(9vw, 7rem);
+    font-size: clamp(1.1rem, 1.8vw, 1.35rem);
+  }
+
+  .hero-actions {
+    margin-left: min(9vw, 7rem);
+  }
+
+  .badge {
+    border-radius: 1rem;
+    padding: 0.55rem 1rem;
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.16);
+  }
+
+  .opening,
+  .privacy-note,
+  .features,
+  .acquisition-wrap,
+  .support-section {
+    width: min(100%, 74rem);
+    margin-inline: auto;
+    padding-inline: clamp(1rem, 5vw, 4rem);
+  }
+
+  .opening {
+    display: grid;
+    grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.35fr);
+    gap: clamp(2rem, 9vw, 8rem);
+    align-items: start;
+    padding-top: clamp(6rem, 16vh, 11rem);
+    padding-bottom: clamp(5rem, 14vh, 9rem);
+  }
+
+  .opening-title {
+    display: flex;
+    align-items: flex-end;
+    gap: 1.25rem;
+    min-width: 0;
+  }
+
+  .opening-title h2 {
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+
+  .opening h2,
+  .privacy-note h2,
+  .features h2,
+  .acquisition h2,
+  .support-section h2 {
+    font-size: clamp(2rem, 4.8vw, 4.25rem);
+    font-weight: 560;
+    line-height: 0.98;
+    letter-spacing: -0.045em;
+  }
+
+  .section-mark {
+    flex: 1;
+    min-width: 1rem;
+    height: 0.35rem;
+    margin-bottom: 0.35rem;
+    border-radius: 999px;
+    background: linear-gradient(90deg, var(--pink), var(--blue));
+  }
+
+  .opening-copy {
+    padding-top: clamp(1rem, 5vw, 4rem);
+  }
+
+  .opening-copy :global(p) {
+    max-width: 49ch;
+  }
+
+  .opening-lede :global(p) {
+    color: var(--ink);
+    font-size: clamp(1.2rem, 2.2vw, 1.7rem);
+    line-height: 1.45;
+    letter-spacing: -0.018em;
+    margin-bottom: 2rem;
+  }
+
+  .privacy-note {
+    display: grid;
+    grid-template-columns: minmax(0, 1.25fr) minmax(15rem, 0.75fr);
+    gap: clamp(2rem, 8vw, 7rem);
+    align-items: end;
+    padding-top: clamp(4rem, 10vh, 7rem);
+    padding-bottom: clamp(6rem, 16vh, 11rem);
+  }
+
+  .privacy-title {
+    padding: clamp(2rem, 6vw, 5rem);
+    border-radius: 2rem 2rem 2rem 0.35rem;
+    background:
+      radial-gradient(90% 120% at 100% 0%, var(--tint-pink), transparent 65%),
+      var(--surface);
+    border: 1px solid var(--line);
+    box-shadow: 0 2rem 6rem color-mix(in srgb, var(--glow) 55%, transparent);
+  }
+
+  .privacy-title .standfirst {
+    max-width: 46ch;
+    margin-top: 2rem;
+    color: var(--ink);
+  }
+
+  .privacy-answer {
+    padding-bottom: 1.5rem;
+  }
+
+  .privacy-answer :global(p) {
+    color: var(--muted);
+  }
+
+  .privacy-answer .more-line {
+    margin-top: 1.75rem;
+  }
+
+  .more {
+    border-bottom-color: var(--pink);
+  }
+
+  .tour {
+    padding-top: clamp(5rem, 14vh, 10rem);
+  }
+
+  .tour-head {
+    max-width: 74rem;
+    margin-bottom: clamp(2.5rem, 7vh, 5rem);
+    padding-inline: clamp(1rem, 5vw, 4rem);
+  }
+
+  .tour-head h2 {
+    max-width: 10ch;
+    font-size: clamp(2.5rem, 7vw, 6rem);
+    font-weight: 560;
+    line-height: 0.94;
+    letter-spacing: -0.055em;
+  }
+
+  .tour-intro {
+    margin-top: 1.5rem;
+    margin-left: min(16vw, 12rem);
+  }
+
+  .tour-strip {
+    gap: clamp(1rem, 2vw, 2rem);
+    padding-inline: clamp(1rem, 5vw, 4rem);
+  }
+
+  .tour-strip li {
+    flex-basis: min(22rem, 82vw);
+  }
+
+  .slot {
+    border-radius: 2rem 2rem 0.6rem 2rem;
+    border-color: color-mix(in srgb, var(--line) 65%, var(--pink));
+    box-shadow: 0 1.4rem 4rem color-mix(in srgb, var(--glow) 45%, transparent);
+  }
+
+  .tour-strip li:nth-child(even) .slot {
+    border-radius: 2rem 2rem 2rem 0.6rem;
+  }
+
+  .features {
+    display: grid;
+    grid-template-columns: minmax(12rem, 0.65fr) minmax(0, 1.35fr);
+    gap: clamp(2rem, 8vw, 7rem);
+    align-items: start;
+    padding-top: clamp(7rem, 18vh, 13rem);
+    padding-bottom: clamp(7rem, 18vh, 13rem);
+  }
+
+  .features-head {
+    position: sticky;
+    top: calc(56px + 2rem);
+  }
+
+  .features-head .section-mark {
+    display: block;
+    width: min(9rem, 70%);
+    margin-top: 1.5rem;
+  }
+
+  .feature-groups {
+    display: grid;
+    gap: clamp(3rem, 9vh, 6rem);
+  }
+
+  .group {
+    margin: 0;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--line);
+  }
+
+  .group:nth-child(even) {
+    margin-left: clamp(0rem, 7vw, 5rem);
+  }
+
+  .group h3 {
+    max-width: 18ch;
+    margin-bottom: 1.75rem;
+    font-size: clamp(1.35rem, 2.5vw, 2rem);
+    font-weight: 560;
+    letter-spacing: -0.025em;
+  }
+
+  .entries {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 0.82fr);
+    gap: 1.4rem clamp(1.5rem, 4vw, 3.5rem);
+  }
+
+  .entries p {
+    max-width: 44ch;
+    font-size: 0.96rem;
+  }
+
+  .entries p.plain {
+    max-width: 56ch;
+    padding: 1.25rem 1.5rem;
+    border-radius: 1rem 1rem 1rem 0.25rem;
+    background: var(--tint-pink);
+  }
+
+  .acquisition-wrap {
+    padding-top: clamp(5rem, 13vh, 9rem);
+    padding-bottom: clamp(5rem, 13vh, 9rem);
+  }
+
+  .acquisition {
+    display: grid;
+    grid-template-columns: repeat(12, minmax(0, 1fr));
+    gap: 1.5rem;
+    padding: clamp(2rem, 6vw, 5rem);
+    border-radius: 2.5rem 2.5rem 0.75rem 2.5rem;
+    background:
+      radial-gradient(90% 120% at 0% 0%, var(--tint-pink), transparent 58%),
+      radial-gradient(75% 90% at 100% 100%, var(--tint-blue), transparent 58%),
+      var(--surface);
+    border: 1px solid var(--line);
+  }
+
+  .acquisition-head {
+    grid-column: 1 / 8;
+  }
+
+  .acquisition-head p {
+    max-width: 40ch;
+    margin-top: 1.5rem;
+  }
+
+  .acquisition-action {
+    grid-column: 9 / 13;
+    align-self: start;
+    justify-self: end;
+  }
+
+  .android,
+  .channels {
+    grid-column: 1 / -1;
+  }
+
+  .android {
+    margin-top: clamp(2rem, 6vh, 4rem);
+  }
+
+  .channels {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0;
+    border-top: 1px solid var(--line);
+  }
+
+  .channels li,
+  .channels li:nth-child(4n + 1),
+  .channels li:nth-child(4n + 3) {
+    min-height: 10rem;
+    padding: 1.5rem;
+    border: 0;
+    border-bottom: 1px solid var(--line);
+    border-radius: 0;
+    background: transparent;
+  }
+
+  .channels li:nth-child(odd) {
+    border-right: 1px solid var(--line);
+  }
+
+  .support-section {
+    display: grid;
+    grid-template-columns: minmax(0, 0.65fr) minmax(0, 1.35fr);
+    gap: clamp(2rem, 8vw, 7rem);
+    padding-top: clamp(6rem, 16vh, 11rem);
+    padding-bottom: clamp(7rem, 18vh, 13rem);
+  }
+
+  .support-title h2 {
+    color: var(--grad-b);
+  }
+
+  .support :global(p) {
+    max-width: 48ch;
+    font-size: clamp(1.1rem, 1.8vw, 1.35rem);
+  }
+
+  .support :global(p:last-child) {
+    margin-top: 2.5rem;
+    padding: 1.5rem 0 1.5rem 2rem;
+    border-left-width: 0.45rem;
+    border-image: linear-gradient(var(--pink), var(--blue)) 1;
+  }
+
+  @media (max-width: 60rem) {
+    .opening,
+    .privacy-note,
+    .features,
+    .support-section {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .opening-copy,
+    .privacy-answer {
+      padding-top: 0;
+    }
+
+    .features-head {
+      position: static;
+    }
+
+    .group:nth-child(even) {
+      margin-left: 0;
+    }
+
+    .acquisition-head {
+      grid-column: 1 / 10;
+    }
+
+    .acquisition-action {
+      grid-column: 10 / 13;
+    }
+  }
+
+  @media (max-width: 48rem) {
+    .hero-inner::after {
+      grid-column: 12;
+    }
+
+    .hero h1,
+    .headline-block,
+    .subheadline,
+    .hero-actions {
+      grid-column: 1 / 12;
+    }
+
+    .subheadline,
+    .hero-actions,
+    .tour-intro {
+      margin-left: 0;
+    }
+
+    .opening {
+      padding-top: 5rem;
+      padding-bottom: 4rem;
+    }
+
+    .privacy-note,
+    .features,
+    .support-section {
+      padding-top: 4rem;
+      padding-bottom: 5rem;
+    }
+
+    .privacy-title,
+    .acquisition {
+      border-radius: 1.5rem 1.5rem 0.4rem 1.5rem;
+    }
+
+    .entries,
+    .channels {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .channels li:nth-child(odd) {
+      border-right: 0;
+    }
+
+    .acquisition {
+      display: block;
+    }
+
+    .acquisition-action {
+      margin: 1.5rem 0 0;
+    }
+
+    .android {
+      margin-top: 3rem;
     }
   }
 </style>

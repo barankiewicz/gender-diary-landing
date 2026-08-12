@@ -2177,26 +2177,21 @@ for (const scheme of ['light', 'dark']) {
   });
 }
 
-test('the motion system brought no dependency with it', async () => {
-  /* Ticket 17, and Alicja's answer about Rive: the pinning, the scrubbing and
-     the drawn stroke are CSS, and the fallback is a file in this repository.
-     A landing page arguing that the app holds nothing back does not ship an
-     animation library to slide paragraphs upward. */
+test('the motion system uses one runtime dependency and no duplicate runtime', async () => {
+  /* Ticket 18 introduces motion.dev on purpose: one runtime dependency, used
+     for the hero stroke choreography and pointer spring interaction, with the
+     rest of the page still CSS or hand-rolled. */
   const manifest = JSON.parse(
     await readFile(fileURLToPath(new URL('../package.json', import.meta.url)), 'utf8'),
   );
-  assert.deepEqual(
-    manifest.dependencies ?? {},
-    {},
-    'the site gained a runtime dependency',
-  );
+  const runtime = Object.keys(manifest.dependencies ?? {}).sort();
+  assert.deepEqual(runtime, ['motion'], 'expected exactly one runtime animation dependency');
 
   /* Matched whole, not as substrings. "motion" inside a package name catches
      half the ecosystem and "aos" catches any word containing it, and a test
      that fails on an innocent dependency gets deleted rather than fixed. */
   const banned = new Set([
     'gsap',
-    'motion',
     'framer-motion',
     'animejs',
     'lenis',
@@ -2209,7 +2204,7 @@ test('the motion system brought no dependency with it', async () => {
   for (const name of Object.keys(manifest.devDependencies ?? {})) {
     assert.ok(
       !banned.has(name),
-      `${name} is an animation library, and this page does its motion in CSS`,
+      `${name} is an animation library, and motion.dev should be the only one here`,
     );
   }
 });
