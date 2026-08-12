@@ -5,6 +5,8 @@
 
    Run with `npm test`, which builds first. */
 import assert from 'node:assert/strict';
+import { execFileSync } from 'node:child_process';
+import { readdir } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { createReporter, launchChromium, serveBuild } from './browser-harness.mjs';
 
@@ -450,6 +452,99 @@ test('without scripting the page reads, in the system theme', async () => {
     assert.equal(await page.getByRole('link', { name: 'Polski' }).count(), 1);
   } finally {
     await context.close();
+  }
+});
+
+// Crawl policy: what sits beside the pages (ticket 14)
+
+/* The page list, derived a second time from the built files. The derivation
+   is the same shape the generator uses, so a bug in the shape itself would
+   pass both sides; what this catches is a sitemap gone stale, or a generator
+   that stopped running or skipped a page. */
+async function builtPagePaths() {
+  const entries = await readdir(buildDirectory, { recursive: true });
+  return entries
+    .filter((entry) => entry.split('/').pop() === 'index.html')
+    .filter((entry) => !entry.split('/').includes('_app'))
+    .map((entry) => '/' + entry.slice(0, -'index.html'.length))
+    .sort();
+}
+
+/** Rewrites build/ into one flavour or the other, with the same script
+    `npm run build` ends on. The script is deterministic, so flipping back
+    restores exactly what the build produced. */
+const crawlPolicy = (flavour) =>
+  execFileSync(process.execPath, ['scripts/crawl-policy.mjs'], {
+    cwd: fileURLToPath(new URL('..', import.meta.url)),
+    env: { ...process.env, SITE_ENV: flavour },
+  });
+
+const NOINDEX = '<meta name="robots" content="noindex">';
+
+const fetchText = async (path) => {
+  const response = await fetch(base + path);
+  return { status: response.status, body: response.ok ? await response.text() : '' };
+};
+
+test('a build not marked production is excluded from indexing', async () => {
+  crawlPolicy('preview');
+
+  for (const path of await builtPagePaths()) {
+    const { body } = await fetchText(path);
+    assert.ok(body.includes(NOINDEX), `${path} was served without a noindex`);
+  }
+
+  const robots = await fetchText('/robots.txt');
+  assert.equal(robots.status, 200, 'a preview build shipped without a robots policy');
+  assert.ok(!robots.body.includes('Sitemap:'), 'a preview build advertised a sitemap');
+  assert.ok(
+    !/^Disallow: \/$/m.test(robots.body),
+    'the preview blocked crawling, which would hide the noindex that does the excluding',
+  );
+
+  assert.equal((await fetchText('/sitemap.xml')).status, 404, 'a preview build kept a sitemap');
+});
+
+test('a production build is indexable, sitemap and robots in agreement', async () => {
+  try {
+    crawlPolicy('production');
+
+    // The worse direction of the two: production carrying the exclusion.
+    for (const path of await builtPagePaths()) {
+      const { body } = await fetchText(path);
+      assert.ok(!/noindex/.test(body), `${path} carried a noindex into production`);
+    }
+
+    const robots = await fetchText('/robots.txt');
+    assert.equal(robots.status, 200, 'production shipped without a robots policy');
+    assert.ok(!/^Disallow: \/$/m.test(robots.body), 'production robots.txt blocked crawling');
+    assert.ok(
+      robots.body.includes(`Sitemap: ${SITE_ORIGIN}/sitemap.xml`),
+      'robots.txt does not point at the sitemap',
+    );
+
+    const sitemap = await fetchText('/sitemap.xml');
+    assert.equal(sitemap.status, 200, 'production build has no sitemap');
+    const listed = [...sitemap.body.matchAll(/<loc>([^<]*)<\/loc>/g)].map(([, url]) => url).sort();
+
+    // Exactly the pages the built site has, on the production origin,
+    // and never with a language missing.
+    assert.deepEqual(
+      listed,
+      (await builtPagePaths()).map((path) => SITE_ORIGIN + path),
+    );
+    for (const locale of ['en', 'pl']) {
+      assert.ok(listed.includes(`${SITE_ORIGIN}/${locale}/`), `the sitemap lost /${locale}/`);
+    }
+
+    // Agreement the way a crawler sees it: everything listed is served.
+    for (const url of listed) {
+      const { status } = await fetchText(url.slice(SITE_ORIGIN.length));
+      assert.equal(status, 200, `${url} is in the sitemap but not in the build`);
+    }
+  } finally {
+    // Leave build/ the way `npm run build` produced it.
+    crawlPolicy('preview');
   }
 });
 
