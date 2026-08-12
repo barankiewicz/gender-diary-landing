@@ -35,13 +35,13 @@ is relying on it.
 >
 > This page is the long answer. It is longer than a privacy page usually is, because
 > the short version would have to leave out the parts that matter to somebody deciding
-> whether this is safe to use.
+> whether to trust this with their journal.
 
 ### Where your journal is
 
 *Gate: shipped.*
 
-> Your journal is a database on your device. There is no Gender Diary account, no copy
+> Your journal is stored on your device. There is no Gender Diary account, no copy
 > on a server of ours, and nothing syncing anywhere in the background. An entry you
 > write goes into storage on the machine you wrote it on and stays there until you
 > export it or delete it.
@@ -54,8 +54,8 @@ is relying on it.
 *Gate: shipped. The counterweight sentence is required by ADR-0014 and by the spec
 wherever app lock is mentioned. It is not optional wording and does not get softened.*
 
-> App lock is off until you turn it on, like everything else on this page that hides
-> things. Keeping a journal about your own life is an ordinary thing to do. Some
+> App lock is off until you turn it on, like every control in Gender Diary that hides
+> something. Keeping a journal about your own life is an ordinary thing to do. Some
 > people's circumstances make it dangerous anyway, and only you know whether that is
 > yours.
 >
@@ -81,24 +81,39 @@ persistent files reveals no protected text, numbers, Reminder titles, photos or
 thumbnails without the unlock secret. Until that test passes this whole block is
 unpublishable and the fallback at the end replaces it.*
 
-> **What is covered.** The journal database, the files the database writes beside
-> itself, the copy taken before an upgrade changes anything, your photos and their
-> thumbnails, an import that is still in progress, and the settings that have to be
-> read before you unlock. If a piece of it is left outside, this page names it rather
-> than rounding up.
+> **What is covered.** Your journal where it is stored, the working files kept beside
+> it, the copy taken before an upgrade changes anything, and your photos and their
+> thumbnails.
 >
 > Photos are files rather than rows in a database, so encrypting the database never
-> reaches them. Each one is encrypted on its own, under the same key.
+> reaches them. Each one is encrypted on its own, under the same key. An import runs
+> through memory and never lands in a temporary file, so there is no half-imported
+> copy of somebody's history sitting on the disk afterwards.
+>
+> **What is not covered, named rather than rounded up.** A few things stay outside,
+> because the app has to be able to start and to let you unlock it: the wrapped key
+> and the settings used to derive it; your theme, palette and language; whether lock
+> on leave and disguise are switched on; and the timestamps that make repeated wrong
+> PIN attempts wait longer each time. None of it is anything you wrote. Somebody
+> reading that part of your browser profile learns which colours you chose and whether
+> disguise is on, and learns nothing about a single entry.
 >
 > **On the web**, you choose a passphrase. It does not encrypt the journal directly. It
 > unlocks a random key that does, which is what lets you change the passphrase later
 > without re-encrypting years of entries. After the browser session ends, the
 > passphrase is needed again. No usable key is left sitting next to the data it would
 > open.
->
+
+*The next block needs a second gate: Journal tickets 11 and 13. Android sentences are
+gated separately from encryption, because there is no Android project until ticket 11,
+and the marketing context flags this as the easiest claim on the site to publish by
+accident.*
+
 > **On Android**, the same random key is held by the Android Keystore rather than by a
 > passphrase you type.
->
+
+*Back to Journal tickets 09 and 10.*
+
 > **The passphrase cannot be recovered.** Not by you and not by us. There is no reset
 > that keeps your entries, no recovery email and no support request that can help,
 > because anything that could let us back in would mean the encryption was never doing
@@ -141,7 +156,12 @@ appears here unqualified.*
 > This is why you will not read "Gender Diary makes no network requests" on this site.
 > Fetching the app is a network request. Your journal moving somewhere is not, and
 > those are different sentences that a reader deserves to have kept apart.
->
+
+*Gate: Journal tickets 11 and 18. This is an Android sentence, so ticket 11 gates it
+before Play availability does, and it may not ride along inside the shipped block
+above. Ticket 06 owns the channel list itself; this is the privacy consequence of a
+channel, not an offer of one.*
+
 > Installing from Google Play means Google records that your account installed this
 > app. That is Google's, not ours, and no setting inside Gender Diary changes it.
 
@@ -173,26 +193,29 @@ under *Privacy and public claims*, is.
 
 | Claim on the page | Rests on |
 |---|---|
-| The journal is a database on your device, with no account and no server copy | No backend exists. `adapter-static`, no networked feature, no registration path in onboarding |
+| The journal is stored on your device, with no account and no server copy | No backend exists. `adapter-static`, no networked feature, no registration path in onboarding |
 | App lock puts a PIN in front of the app | Phase 1 ticket 17 |
 | App lock is not encryption of what is stored | ADR-0014, which requires the lock screen never to imply at-rest encryption. Required counterweight, per the marketing context |
 | A forgotten PIN has one way back, and it wipes the local journal | ADR-0014 |
 | Wrong PIN attempts get a growing delay, with no automatic wipe on a counter | ADR-0014, including the reasoning about an accidental second way to lose everything |
-| Everything on this page that hides things is off until you turn it on | The Journal's preference catalogue, where app lock, disguise, lock on leave and quick exit all default to false |
+| Every control that hides something is off until you turn it on | The Journal's preference catalogue, where app lock, disguise, lock on leave and quick exit all default to false. Scoped to the hiding controls on purpose: encryption at rest and Archive passwords are not opt-in, so the sentence must not be read as covering them |
 | The journal is encrypted at rest under a random key | ADR-0018, ADR-0020. Gated on Journal ticket 09 and its claim-gate test |
-| Coverage includes side files, pre-migration copies, photos, thumbnails, temporary imports and sensitive boot data | Phase 2 spec, at-rest encryption. Photos specifically: per-file AES-256-GCM under the same data key, since whole-database encryption cannot reach files |
+| Coverage includes the working files beside the journal, pre-migration copies, photos and thumbnails | Phase 2 spec, at-rest encryption. The claim-gate probe scans exactly these byte for byte: `tests/browser-tier/encryption-probe.ts` |
+| Photos are encrypted one file at a time under the same key | `src/lib/data/photos/encrypted-file-store.ts`, AES-256-GCM with the file name as additional authenticated data. ADR-0020: photos and thumbnails live outside SQLite, so no whole-database mechanism reaches them |
+| An import never lands in a temporary file | ADR-0018: "Imports stream through memory and touch no temporary file" |
+| The named exclusions: wrapped key and its derivation settings, theme, palette, language, lock on leave, disguise, and the PIN throttle timestamps | ADR-0018, which requires exactly this list to be named in any claim copy, and states that none of it is journal content. The PIN hash left this set with Journal ticket 09, since a hash with 10,000 preimages beside the ciphertext was an offline-guessable secret |
 | A passphrase wraps the key rather than encrypting the journal, so it can be changed without re-encrypting | ADR-0018. Rewrap rather than re-encrypt is in the spec and in ticket 09's acceptance |
 | The passphrase is required again after the browser session ends | Phase 2 spec, at-rest encryption |
 | Android holds the key in the Keystore | Phase 2 spec. Gated on Journal tickets 11 and 13 |
 | The Journal passphrase cannot be recovered | Phase 2 spec: no data-preserving recovery. Ticket 09 requires setup to say so; this page says it earlier |
 | An Archive is encrypted under a password you choose before it leaves the app | ADR-0007. AES-256-GCM in chunks, Argon2id |
-| An Archive password is a separate secret from the passphrase and the PIN | ADR-0013, which tunes Argon2id per consumer |
+| An Archive password is a separate secret from the passphrase and the PIN | ADR-0007, where an Archive derives its key from its own password and salt, and ADR-0018, where the passphrase only wraps the data key. ADR-0013 is the related but narrower point that the three consumers get separately tuned Argon2id parameters |
 | An Archive's header is readable without the password, and identifies the format | ADR-0007: plaintext header carrying magic bytes, version, parameters and salt. The magic bytes are `47 44 49 41 52 59`, ASCII GDIARY |
 | A lost Archive password makes that file unreadable, and affects no other Archive | ADR-0007. Each Archive derives its key from its own password and salt |
 | The web host sees an IP address and that the app was fetched | How hosted web applications work. Required by the spec to be stated |
 | Entries are not sent to a Gender Diary server | No server exists |
 | "Makes no network requests" is never used unqualified | Phase 2 spec, privacy and public claims. The Journal's own About screen currently uses it, which is that repository's ticket 21 to fix and not a licence to repeat it here |
-| Installing from Play means Google knows | Marketing context, objections |
+| Installing from Play means Google knows | Marketing context, objections. Gated on Journal tickets 11 and 18, not shipped: it is an Android sentence first and a channel sentence second |
 | Memory inspection, a compromised operating system and an already unlocked app are out of scope | Phase 2 spec, at-rest encryption, final bullet |
 
 ## Fallback wording, if this page publishes before the encryption gate
