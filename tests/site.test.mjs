@@ -9,6 +9,7 @@ import { execFileSync } from 'node:child_process';
 import { readdir } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { createReporter, launchChromium, serveBuild } from './browser-harness.mjs';
+import { copyBlocks, sentences } from './copy-source.mjs';
 
 /* The origin the built pages name in their canonical and alternate links. It
    is provisional (spec, further notes), and changing it should be a deliberate
@@ -276,14 +277,20 @@ for (const locale of ['en', 'pl']) {
     try {
       await page.goto(`${base}/${locale}/`);
 
-      /* Everything in main is content and one action. The language and theme
-         controls live outside it, so a second link here would mean a second
-         thing competing with Start journal. */
-      const actions = page.locator('main a');
-      assert.equal(await actions.count(), 1, 'the page did not offer exactly one action');
+      /* Everything in main is content, one action, and the way to the site's
+         other page. The language and theme controls live outside it, so a
+         third link here would be something new competing with Start journal.
+         The privacy page is not competition: it goes further into this site
+         rather than out of it, which is what the assertion checks by naming
+         both destinations rather than counting them. */
+      const links = await page.locator('main a').evaluateAll((found) => found.map((a) => a.href));
+      assert.deepEqual(
+        links,
+        [`${base}/${locale}/privacy/`, JOURNAL_URL],
+        'main offered something besides the privacy page and Start journal',
+      );
 
-      const action = actions.first();
-      assert.equal(await action.innerText(), ACQUISITION[locale].action);
+      const action = page.getByRole('link', { name: ACQUISITION[locale].action });
       assert.equal(
         await action.getAttribute('href'),
         JOURNAL_URL,
@@ -430,7 +437,7 @@ test('without scripting the page reads, in the system theme', async () => {
   try {
     await page.goto(`${base}/pl/`);
     assert.equal(await documentLanguage(page), 'pl');
-    assert.equal(await page.locator('main section').count(), 3);
+    assert.equal(await page.locator('main section').count(), SECTIONS.pl.length);
     assert.equal(await themeNow(page), 'dark', 'a dark system theme got a light page');
     assert.equal(
       await page.locator('.theme-control').isVisible(),
@@ -545,6 +552,270 @@ test('a production build is indexable, sitemap and robots in agreement', async (
   } finally {
     // Leave build/ the way `npm run build` produced it.
     crawlPolicy('preview');
+  }
+});
+
+// The copy: what publishes, what stays staged, and what it says
+
+/** The landing page's sections, in the order a reader meets them. Written out
+    rather than counted, so that a section quietly disappearing fails here and
+    names itself. */
+const SECTIONS = {
+  en: [
+    'What Gender Diary is',
+    "What it protects, and what it doesn't",
+    'The screens',
+    'What it does',
+    'How to get it',
+    'Support',
+  ],
+  pl: [
+    'Czym jest Gender Diary',
+    'Co chroni, a czego nie',
+    'Ekrany',
+    'Co potrafi',
+    'Skąd je wziąć',
+    'Pomoc',
+  ],
+};
+
+/** The privacy page's own title, which is also the text of the link the
+    landing page offers to it. */
+const PRIVACY_TITLE = {
+  en: 'What Gender Diary protects, and what it does not',
+  pl: 'Co Gender Diary chroni, a czego nie chroni',
+};
+
+/** The wording that publishes in place of the at-rest encryption block, which
+    is gated on Journal ticket 09 and its claim-gate test. Naming the sentence
+    here rather than deriving it means an edit that swaps the two has to come
+    through this file. */
+const ENCRYPTION_FALLBACK = {
+  en: 'The journal is not encrypted where it is stored, yet.',
+  pl: 'Dziennik nie jest jeszcze szyfrowany tam, gdzie jest zapisany.',
+};
+
+/** The eight screens of the visual tour, by the name each caption is filed
+    under in the copy files. Ticket 09 makes the screenshots. */
+const TOUR = {
+  en: [
+    'Home',
+    'An entry',
+    'The month',
+    'One day, twice',
+    'Search',
+    'Six months of one scale',
+    'Milestones',
+    'Export',
+  ],
+  pl: [
+    'Ekran główny',
+    'Wpis',
+    'Miesiąc',
+    'Jeden dzień, dwa wpisy',
+    'Wyszukiwanie',
+    'Pół roku jednej skali',
+    'Kamienie milowe',
+    'Eksport',
+  ],
+};
+
+const PAGE_PATHS = { landing: '', privacy: 'privacy/' };
+
+/** Both pages of one language, as the words a visitor can read on them. */
+async function readSite(page, locale) {
+  const text = {};
+  for (const [name, suffix] of Object.entries(PAGE_PATHS)) {
+    await page.goto(`${base}/${locale}/${suffix}`);
+    text[name] = (await page.locator('body').innerText()).replace(/\s+/g, ' ');
+  }
+  return text;
+}
+
+for (const locale of ['en', 'pl']) {
+  test(`${locale}: a staged block never reaches a page`, async () => {
+    const { context, page } = await visitor({});
+    try {
+      const text = await readSite(page, locale);
+      const site = `${text.landing} ${text.privacy}`;
+
+      const staged = Object.keys(PAGE_PATHS).flatMap((name) =>
+        copyBlocks(locale, name)
+          .filter((block) => !block.publishes)
+          .map((block) => ({ ...block, name })),
+      );
+      assert.ok(staged.length > 0, 'no staged blocks were found, so this proved nothing');
+
+      /* Sentence by sentence as well as whole paragraph, because a block that
+         published half of itself published half of itself. The floor keeps a
+         fragment too short to be distinctive from failing this on a collision
+         with unrelated copy. */
+      for (const block of staged) {
+        for (const paragraph of block.paragraphs) {
+          for (const sentence of [paragraph, ...sentences(paragraph)]) {
+            if (sentence.length < 20) continue;
+            assert.ok(
+              !site.includes(sentence),
+              `${block.name}: a sentence gated on "${block.marker.split('.')[0]}" is on the site: ${sentence}`,
+            );
+          }
+        }
+      }
+    } finally {
+      await context.close();
+    }
+  });
+
+  test(`${locale}: every shipped block is on its page, word for word`, async () => {
+    const { context, page } = await visitor({});
+    try {
+      const text = await readSite(page, locale);
+
+      for (const name of Object.keys(PAGE_PATHS)) {
+        const shipped = copyBlocks(locale, name).filter((block) => block.publishes);
+        assert.ok(shipped.length > 0, `no shipped blocks in content/${locale}/${name}.md`);
+
+        for (const block of shipped) {
+          for (const paragraph of block.paragraphs) {
+            assert.ok(
+              text[name].includes(paragraph),
+              `${name}: shipped copy is missing or reworded: ${paragraph.slice(0, 70)}`,
+            );
+          }
+        }
+      }
+    } finally {
+      await context.close();
+    }
+  });
+
+  test(`${locale}: the landing page renders every section`, async () => {
+    const { context, page } = await visitor({});
+    try {
+      await page.goto(`${base}/${locale}/`);
+      const headings = await page
+        .locator('main section > h2')
+        .evaluateAll((found) => found.map((h) => h.textContent.trim()));
+      assert.deepEqual(headings, SECTIONS[locale]);
+
+      assert.equal(await page.locator('main h1').innerText(), 'Gender Diary');
+      assert.ok(
+        (await page.locator('main').innerText()).includes(
+          locale === 'en'
+            ? 'A transition journal that stays on your device.'
+            : 'Dziennik tranzycji, który zostaje na twoim urządzeniu.',
+        ),
+        'the hero headline is not on the page',
+      );
+    } finally {
+      await context.close();
+    }
+  });
+
+  test(`${locale}: the tour is eight captions and no picture`, async () => {
+    const { context, page } = await visitor({});
+    try {
+      await page.goto(`${base}/${locale}/`);
+      const tour = page.locator('section').filter({
+        has: page.getByRole('heading', { name: SECTIONS[locale][2] }),
+      });
+
+      const screens = await tour
+        .locator('li > h3')
+        .evaluateAll((found) => found.map((h) => h.textContent.trim()));
+      assert.deepEqual(screens, TOUR[locale]);
+
+      /* Ticket 09 owns the screenshots and they do not exist. The captions
+         stand on their own until they do, and nothing here shows a frame, an
+         alt text or a placeholder describing a picture that is not there. */
+      assert.equal(await tour.locator('img').count(), 0, 'the tour claimed a picture');
+    } finally {
+      await context.close();
+    }
+  });
+
+  test(`${locale}: the privacy page is its own indexable location`, async () => {
+    /* Scripting off: the second page has to be reachable and readable without
+       it, like the first. */
+    const { context, page } = await visitor({ javaScriptEnabled: false });
+    try {
+      await page.goto(`${base}/${locale}/`);
+      await page.getByRole('link', { name: PRIVACY_TITLE[locale] }).click();
+      await page.waitForURL(`${base}/${locale}/privacy/`);
+
+      assert.equal(await documentLanguage(page), locale);
+      assert.equal(await page.locator('main h1').innerText(), PRIVACY_TITLE[locale]);
+
+      const alternates = await page.evaluate(() =>
+        Object.fromEntries(
+          [...document.querySelectorAll('link[rel=alternate][hreflang]')].map((link) => [
+            link.getAttribute('hreflang'),
+            link.getAttribute('href'),
+          ]),
+        ),
+      );
+      assert.deepEqual(alternates, {
+        en: `${SITE_ORIGIN}/en/privacy/`,
+        pl: `${SITE_ORIGIN}/pl/privacy/`,
+        'x-default': `${SITE_ORIGIN}/en/privacy/`,
+      });
+      assert.equal(
+        await page.getAttribute('link[rel=canonical]', 'href'),
+        `${SITE_ORIGIN}/${locale}/privacy/`,
+      );
+    } finally {
+      await context.close();
+    }
+  });
+
+  test(`${locale}: the privacy page says the journal is not encrypted yet`, async () => {
+    const { context, page } = await visitor({});
+    try {
+      await page.goto(`${base}/${locale}/privacy/`);
+      const text = await page.locator('main').innerText();
+
+      assert.ok(
+        text.includes(ENCRYPTION_FALLBACK[locale]),
+        'the privacy page did not carry the fallback encryption wording',
+      );
+      /* The claim the fallback stands in for. It is asserted by name as well
+         as by gate, because this is the one sentence on the site whose early
+         publication would be a lie to somebody deciding what to trust. */
+      assert.ok(
+        !text.includes(locale === 'en' ? 'What is covered.' : 'Co obejmuje.'),
+        'the gated at-rest encryption block reached the privacy page',
+      );
+    } finally {
+      await context.close();
+    }
+  });
+}
+
+test('switching language on the privacy page stays on the privacy page', async () => {
+  const { context, page } = await visitor({ javaScriptEnabled: false });
+  try {
+    await page.goto(`${base}/en/privacy/`);
+    await page.getByRole('link', { name: 'Polski' }).click();
+    await page.waitForURL(`${base}/pl/privacy/`);
+    assert.equal(await documentLanguage(page), 'pl');
+    assert.equal(await page.locator('main h1').innerText(), PRIVACY_TITLE.pl);
+
+    // And back out to the landing page in the language the reader is now in.
+    await page.getByRole('link', { name: 'Gender Diary' }).click();
+    await page.waitForURL(`${base}/pl/`);
+  } finally {
+    await context.close();
+  }
+});
+
+test('the two languages gate the same blocks in the same order', () => {
+  for (const name of Object.keys(PAGE_PATHS)) {
+    const gates = (locale) => copyBlocks(locale, name).map((block) => block.publishes);
+    assert.deepEqual(
+      gates('pl'),
+      gates('en'),
+      `content/pl/${name}.md and content/en/${name}.md do not match block for block`,
+    );
   }
 });
 

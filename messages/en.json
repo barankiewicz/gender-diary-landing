@@ -6,8 +6,169 @@
   "themeSystem": "System",
   "themeLight": "Light",
   "themeDark": "Dark",
+  "hero": {
+    "headline": "A transition journal that stays on your device.",
+    "subheadline": "Write down how a day went, and track how your gender felt that day. No account, nothing to sync."
+  },
   "sectionOverview": "What Gender Diary is",
+  "overview": [
+    "Gender Diary is a diary for tracking gender transition. An entry holds a mood, a note, your scales, tags and photos, and it only needs one of those to count. Write several in one day if one does not cover it. Backdate one to a day you missed.",
+    "Mood trackers are the right shape for a daily habit, and they have nowhere to put gender. Gender Diary keeps the shape and adds scales you name yourself. It records what you tell it and does not try to interpret any of it."
+  ],
   "sectionPrivacy": "What it protects, and what it doesn't",
+  "privacyHandoff": [
+    "Your journal is stored on your device. There is no Gender Diary account, and your entries are not sent to a Gender Diary server.",
+    "What that protects, and what it does not, is on its own page."
+  ],
+  "sectionTour": "The screens",
+  "tourIntro": "Every screenshot here was made with invented data. Nobody's journal appears on this site.",
+  "tour": [
+    {
+      "screen": "Home",
+      "caption": "The greeting, what is coming up, and the last seven days in whatever colour you picked. The mood row logs an entry for right now in one action, so on a day when you cannot face writing, you can still log something. Invented entries."
+    },
+    {
+      "screen": "An entry",
+      "caption": "Mood, your scales, tags, a note, photos. An entry needs only one of them, so a day where all you managed was a mood is still a day you logged. Invented entry."
+    },
+    {
+      "screen": "The month",
+      "caption": "Coloured by mood, or by any scale you choose. Days you did not log stay neutral, because a gap is not a bad day and the colour never says it was."
+    },
+    {
+      "screen": "One day, twice",
+      "caption": "Gender can shift through a day, so a day holds as many entries as it needs and stamps each one with its time. The day's own colour is their average. Invented entries."
+    },
+    {
+      "screen": "Search",
+      "caption": "Searches your notes and your tags as you type. Diacritics do not matter in either direction: type lozko and it finds łóżko. Invented entries."
+    },
+    {
+      "screen": "Six months of one scale",
+      "caption": "Every scale gets its own chart and its own average over however many days you pick. Days with more than one entry are averaged, and the list behind the chart says which days those were."
+    },
+    {
+      "screen": "Milestones",
+      "caption": "Dated days that matter, in order. The ones ahead count down. The ones behind come back each year."
+    },
+    {
+      "screen": "Export",
+      "caption": "Export packs everything into one Archive, encrypted with a password you choose, before it goes anywhere. Invented journal."
+    }
+  ],
+  "sectionFeatures": "What it does",
+  "features": [
+    {
+      "group": "Writing it down",
+      "blocks": [
+        {
+          "lead": "Entries.",
+          "rest": " A mood on five levels, a note, tags, photos, and your scales. Several a day, or backdated to a day you missed."
+        },
+        {
+          "lead": "Scales.",
+          "rest": " Five come built in, among them Gender feeling, which runs from dysphoria at one end to euphoria at the other. Make your own, with whatever two end labels and range you want, and group the ones you use into a preset so the entry screen only asks about what you actually track."
+        },
+        {
+          "lead": "Tags.",
+          "rest": " Grouped and editable. Turn a whole group off when it stops being relevant. Hiding a built-in tag takes it out of every picker and leaves every entry that already carries it alone."
+        },
+        {
+          "lead": "Photos.",
+          "rest": " Kept in the app's own storage. They never go into your phone's gallery, so they do not turn up in a camera roll someone else is scrolling."
+        }
+      ]
+    },
+    {
+      "group": "Reading it back",
+      "blocks": [
+        {
+          "lead": "The month.",
+          "rest": " A heat map in one colour, driven by mood or by a scale you pick."
+        },
+        {
+          "lead": "Search.",
+          "rest": " Your notes and tag labels, matched as you type, ignoring diacritics."
+        },
+        {
+          "lead": "Charts.",
+          "rest": " One per scale, over 7 to 365 days, with your streak. Open one for the dated list of values behind it, so you can check the line instead of taking it on trust."
+        },
+        {
+          "lead": "Tag insights.",
+          "rest": " For a given scale, how days with a tag compare to days without it. An observation, not a verdict. Tags with fewer than three entries in that stretch are left out, because at that size the difference is noise."
+        },
+        {
+          "lead": "Recap.",
+          "rest": " When a month ends, what it held. A finished year gets the same."
+        },
+        {
+          "lead": "Milestones and the timeline.",
+          "rest": " Countdowns ahead, anniversaries behind."
+        },
+        {
+          "lead": "Lab results.",
+          "rest": " Keep your own numbers and watch them over time. No reference ranges, and nothing telling you a number is good or bad."
+        }
+      ]
+    },
+    {
+      "group": "Keeping it",
+      "blocks": [
+        {
+          "lead": "Archives.",
+          "rest": " Export packs your journal into one file, encrypted with a password you choose, before it leaves the app. Import puts it back, either merged into what is here or replacing it."
+        },
+        {
+          "lead": "Coming from Daylio.",
+          "rest": " Import a Daylio CSV. It shows you the counts and how the moods will map before it writes anything, and it only ever merges."
+        },
+        {
+          "lead": "Plain export.",
+          "rest": " CSV or JSON, for a spreadsheet or for keeping your own copy. It is not encrypted, and the app says so and makes you confirm before it writes the file."
+        },
+        {
+          "lead": "When it has been a while.",
+          "rest": " If your last Archive is more than 30 days old, the home screen says so once. You can dismiss it."
+        }
+      ]
+    },
+    {
+      "group": "If you need to be careful",
+      "blocks": [
+        "Everything in this section is off until you turn it on. Keeping a journal about your own life is not something to be ashamed of, and the app does not behave as though it is. These exist because some people's circumstances are genuinely unsafe, and only you know whether that is yours.",
+        {
+          "lead": "App lock.",
+          "rest": " A PIN in front of the app. It stops someone picking up your unlocked phone and reading it. It is not encryption of what is stored."
+        },
+        {
+          "lead": "Disguise.",
+          "rest": " The browser tab says Notes instead of Gender Diary."
+        },
+        {
+          "lead": "Quick exit.",
+          "rest": " A two-finger swipe down blanks the tab, and locks it if you have app lock switched on."
+        }
+      ]
+    },
+    {
+      "group": "How it looks",
+      "blocks": [
+        {
+          "lead": "Eight palettes",
+          "rest": ", including trans, nonbinary, genderfluid, bisexual, lesbian, pansexual, agender and rainbow. Each one recolours the whole app, charts and calendar included, and each one works in light and dark."
+        },
+        {
+          "lead": "Colour never judges.",
+          "rest": " No red for a bad day and no green for a good one. The heat map is one colour at different strengths, and an empty day stays empty."
+        },
+        {
+          "lead": "Two languages.",
+          "rest": " English and Polish, switchable in settings, with dates following whichever you pick."
+        }
+      ]
+    }
+  ],
   "sectionAcquisition": "How to get it",
   "acquisitionIntro": "Gender Diary runs in a browser. It opens straight away, with nothing to install and no account to make.",
   "startJournal": "Start journal",
@@ -31,5 +192,83 @@
       "note": "Works, and tells Google you have a trans app on your phone. Nothing in Gender Diary changes that."
     }
   ],
-  "copyPending": "Copy pending."
+  "sectionSupport": "Support",
+  "support": [
+    {
+      "lead": "If something is broken",
+      "rest": ", tell me what happened and what you expected instead. That is usually enough to find it."
+    },
+    {
+      "lead": "Do not send me your journal.",
+      "rest": " Not an Archive, not a screenshot with your entries in it, not a log from a session where you were writing. I will never ask for any of it. If something asks, it is not me."
+    }
+  ],
+  "privacyPage": {
+    "title": "What Gender Diary protects, and what it does not",
+    "intro": "This is the long answer. The short one would have to leave out the parts that matter if you are deciding whether to trust this with your journal.",
+    "sections": [
+      {
+        "heading": "Where your journal is",
+        "blocks": [
+          "Your journal is stored on your device. There is no Gender Diary account, no server with a copy of it on, and nothing syncing in the background. An entry you write goes into storage on the device you wrote it on and stays there until you export it or delete it.",
+          "There is no server, so there is no server to be breached, subpoenaed or sold. What you are trusting instead is your own device and whoever else can reach it."
+        ]
+      },
+      {
+        "heading": "App lock",
+        "blocks": [
+          "App lock is off until you turn it on, like every control in Gender Diary that hides something. Keeping a journal about your own life is an ordinary thing to do. Some people's circumstances make it dangerous anyway, and only you know whether that is yours.",
+          {
+            "lead": "What it does.",
+            "rest": " App lock puts a PIN in front of the app, so somebody who picks up your unlocked phone cannot read your journal by opening it."
+          },
+          {
+            "lead": "What it is not.",
+            "rest": " It is not encryption of what is stored. It is a gate in the interface, and the interface is not the only way to reach a file. Four digits will stop a glance over your shoulder. It will not stop somebody with your device, time and a reason."
+          },
+          {
+            "lead": "If you forget the PIN",
+            "rest": ", there is one way back in: an action on the lock screen that wipes the local journal and starts you over. There is no recovery that keeps your entries, because a PIN that could be recovered would not be protecting anything. Wrong attempts wait longer and longer before the next one is accepted, and nothing wipes your journal automatically after a set number of tries. A counter like that is one bored kid or one argument away from destroying a diary nobody decided to destroy."
+          }
+        ]
+      },
+      {
+        "heading": "Encryption at rest",
+        "blocks": [
+          {
+            "lead": "The journal is not encrypted where it is stored, yet.",
+            "rest": " App lock limits access through the app. It is not encryption of the database, and somebody who can copy the files off your device can read what is in them. Encrypting the stored journal is being built, and this page will say so, name what it covers and name what it does not, once a test can show a copy of the closed files giving nothing up."
+          }
+        ]
+      },
+      {
+        "heading": "Archives",
+        "blocks": [
+          "Export packs your journal into a single Archive file, encrypted with a password you choose, before the file goes anywhere. That password is not your PIN and not your Journal passphrase. It protects that one file.",
+          {
+            "lead": "What an Archive gives away.",
+            "rest": " The first six bytes of the file spell GDIARY in plain text, followed by the format version and the settings used to turn your password into a key. That part has to be readable without the password, so that a file from a newer version can say so instead of decrypting into nonsense. Everything from your journal is behind the password. Somebody who finds the file learns that you have a Gender Diary Archive, and nothing about what is in it."
+          },
+          {
+            "lead": "If you lose an Archive password",
+            "rest": ", that file is not readable again. Other Archives made with other passwords are unaffected."
+          }
+        ]
+      },
+      {
+        "heading": "What the web host can see",
+        "blocks": [
+          "Opening the app in a browser means asking a web host for it, and that host can see an IP address, roughly when the request happened, and that the app was fetched. Checking for a new version is the same kind of request. This is true of every website you open, and it is true of this one.",
+          "What the host does not receive is your journal. Entries, photos, notes and lab values are not sent to it, because there is nowhere for them to be sent.",
+          "You will not read \"Gender Diary makes no network requests\" here, because it is not true. Fetching the app is a network request. Your journal going somewhere is not."
+        ]
+      },
+      {
+        "heading": "What none of this protects against",
+        "blocks": [
+          "If somebody already controls your device, none of this is what stands between them and your journal. An unlocked phone in somebody else's hands, an operating system that has been compromised, or the app sitting open in front of them are all outside what encryption at rest can do. Gender Diary does not claim otherwise. Be wary of anything that does."
+        ]
+      }
+    ]
+  }
 }
