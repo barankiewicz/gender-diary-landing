@@ -100,6 +100,52 @@ const acquisitionSection = (page, locale) =>
     has: page.getByRole('heading', { name: ACQUISITION[locale].heading }),
   });
 
+async function contrastTokens(page) {
+  return page.evaluate(() => {
+    const root = getComputedStyle(document.documentElement);
+
+    const colorToRgb = (value) => {
+      const probe = document.createElement('span');
+      probe.style.color = value;
+      document.body.append(probe);
+      const rgb = getComputedStyle(probe).color;
+      probe.remove();
+      const parts = rgb.match(/\d+(?:\.\d+)?/g).map(Number);
+      return [parts[0], parts[1], parts[2]];
+    };
+
+    const luminance = ([r, g, b]) => {
+      const channel = (n) => {
+        const v = n / 255;
+        return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
+      };
+      return 0.2126 * channel(r) + 0.7152 * channel(g) + 0.0722 * channel(b);
+    };
+
+    const ratio = (front, back) => {
+      const [bright, dark] = [luminance(front), luminance(back)].sort((a, b) => b - a);
+      return (bright + 0.05) / (dark + 0.05);
+    };
+
+    const token = (name) => root.getPropertyValue(name).trim();
+    const pageColor = colorToRgb(token('--page'));
+    const surface = colorToRgb(token('--surface'));
+    const ink = colorToRgb(token('--ink'));
+    const muted = colorToRgb(token('--muted'));
+    const inkOnAccent = colorToRgb(token('--ink-on-accent'));
+    const blue = colorToRgb(token('--blue'));
+    const pink = colorToRgb(token('--pink'));
+
+    return {
+      inkOnPage: ratio(ink, pageColor),
+      mutedOnPage: ratio(muted, pageColor),
+      inkOnSurface: ratio(ink, surface),
+      accentTextOnBlue: ratio(inkOnAccent, blue),
+      accentTextOnPink: ratio(inkOnAccent, pink),
+    };
+  });
+}
+
 // Language: where a first visit lands
 
 for (const [locale, expected] of [
@@ -461,6 +507,183 @@ for (const locale of ['en', 'pl']) {
     }
   });
 }
+
+// Accessibility and keyboard use (ticket 10)
+
+for (const locale of ['en', 'pl']) {
+  test(`${locale}: keyboard can operate language and theme controls`, async () => {
+    const { context, page } = await visitor({ locale: locale === 'pl' ? 'pl-PL' : 'en-US' });
+    try {
+      await page.goto(`${base}/${locale}/`);
+
+      const oppositeLanguage = locale === 'en' ? 'Polski' : 'English';
+      const expectedPath = locale === 'en' ? '/pl/' : '/en/';
+
+      // Tab through the top controls until the other language link is focused.
+      let landed = false;
+      for (let i = 0; i < 20; i++) {
+        await page.keyboard.press('Tab');
+        const focused = await page.evaluate(() => document.activeElement?.textContent?.trim() || '');
+        if (focused === oppositeLanguage) {
+          landed = true;
+          break;
+        }
+      }
+      assert.ok(landed, `keyboard could not reach language link: ${oppositeLanguage}`);
+
+      const ring = await page.evaluate(() => {
+        const style = getComputedStyle(document.activeElement);
+        return { width: Number.parseFloat(style.outlineWidth), line: style.outlineStyle };
+      });
+      assert.ok(ring.width >= 1 && ring.line !== 'none', 'focused control had no visible focus ring');
+
+      await page.keyboard.press('Enter');
+      await page.waitForURL(`${base}${expectedPath}`);
+
+      const darkLabel = locale === 'en' ? 'Ciemny' : 'Dark';
+      await page.getByRole('button', { name: darkLabel }).first().focus();
+      await page.keyboard.press('Space');
+      assert.equal(await themeNow(page), 'dark');
+    } finally {
+      await context.close();
+    }
+  });
+
+  test(`${locale}: landmarks and control names are meaningful to assistive tech`, async () => {
+    const { context, page } = await visitor({ locale: locale === 'pl' ? 'pl-PL' : 'en-US' });
+    try {
+      await page.goto(`${base}/${locale}/`);
+      const semantic = await page.evaluate(() => ({
+        hasBanner: Boolean(document.querySelector('header')),
+        hasMain: Boolean(document.querySelector('main#content')),
+        navNames: [...document.querySelectorAll('nav')].map((node) => node.getAttribute('aria-label') || ''),
+        h1: document.querySelector('main h1')?.textContent?.trim() || '',
+        languageLinks: [...document.querySelectorAll('header nav a')].map((node) =>
+          node.textContent?.trim() || '',
+        ),
+        themeButtons: [...document.querySelectorAll('.theme-control button')].map((node) =>
+          node.textContent?.trim() || '',
+        ),
+      }));
+
+      assert.equal(semantic.hasBanner, true, 'missing banner landmark');
+      assert.equal(semantic.hasMain, true, 'missing main landmark');
+      assert.ok(
+        semantic.navNames.includes(locale === 'en' ? 'Language' : 'Język'),
+        'language control lacks meaningful navigation label',
+      );
+      assert.equal(semantic.h1, 'Gender Diary', 'missing top-level heading announcement');
+
+      for (const name of ['English', 'Polski']) {
+        assert.ok(semantic.languageLinks.includes(name), `missing language link name: ${name}`);
+      }
+
+      for (const label of locale === 'en' ? ['System', 'Light', 'Dark'] : ['Systemowy', 'Jasny', 'Ciemny']) {
+        assert.ok(semantic.themeButtons.includes(label), `missing theme button name: ${label}`);
+      }
+    } finally {
+      await context.close();
+    }
+  });
+}
+
+/* Contrast is a property of the palette, not of the viewport: enlarging text
+   cannot change what --ink over --page resolves to. So the ratios are checked
+   once per theme, and the thing that enlarging text really does endanger -
+   the layout - is checked separately below. */
+for (const scheme of ['light', 'dark']) {
+  test(`${scheme}: text holds its contrast against the surfaces behind it`, async () => {
+    const { context, page } = await visitor({ colorScheme: scheme });
+    try {
+      await page.goto(`${base}/en/`);
+
+      const ratios = await contrastTokens(page);
+      assert.ok(ratios.inkOnPage >= 4.5, `ink/page contrast too low: ${ratios.inkOnPage.toFixed(2)}`);
+      assert.ok(
+        ratios.mutedOnPage >= 4.5,
+        `muted/page contrast too low: ${ratios.mutedOnPage.toFixed(2)}`,
+      );
+      assert.ok(
+        ratios.inkOnSurface >= 4.5,
+        `ink/surface contrast too low: ${ratios.inkOnSurface.toFixed(2)}`,
+      );
+      assert.ok(
+        ratios.accentTextOnBlue >= 4.5,
+        `accent text/blue contrast too low: ${ratios.accentTextOnBlue.toFixed(2)}`,
+      );
+      assert.ok(
+        ratios.accentTextOnPink >= 4.5,
+        `accent text/pink contrast too low: ${ratios.accentTextOnPink.toFixed(2)}`,
+      );
+    } finally {
+      await context.close();
+    }
+  });
+}
+
+/* Somebody who doubles the text size is the reason the layout is built in
+   relative units. Doubling the root font size is the part of browser zoom
+   that reflows text, and a layout pinned in pixels answers it by pushing the
+   page sideways - the same failure the 390px loop above looks for, reached
+   from the other direction. Polish runs too, because it is the longer text. */
+for (const locale of ['en', 'pl']) {
+  test(`${locale}: doubling the text size does not push the page sideways`, async () => {
+    const { context, page } = await visitor({});
+    try {
+      for (const suffix of Object.values(PAGE_PATHS)) {
+        await page.goto(`${base}/${locale}/${suffix}`);
+        await page.evaluate(() => {
+          document.documentElement.style.fontSize = '200%';
+        });
+        const overflow = await page.evaluate(
+          () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+        );
+        assert.equal(overflow, 0, `/${locale}/${suffix} scrolls sideways at 200% text size`);
+      }
+    } finally {
+      await context.close();
+    }
+  });
+}
+
+test('reduced motion disables the moving parts rather than shortening them', async () => {
+  const { context, page } = await visitor({});
+  try {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await page.goto(`${base}/en/`);
+
+    const reduced = await page.evaluate(() => ({
+      hero: getComputedStyle(document.querySelector('main h1')).animationName,
+      blob: getComputedStyle(document.querySelector('.blob-a')).animationName,
+      ctaTransition: getComputedStyle(document.querySelector('.cta')).transitionProperty,
+      badgeTransition: getComputedStyle(document.querySelector('.badge')).transitionProperty,
+    }));
+
+    assert.equal(reduced.hero, 'none', 'hero heading still runs rise or shimmer with reduced motion');
+    assert.equal(reduced.blob, 'none', 'aurora blob still animates with reduced motion');
+    assert.ok(
+      !reduced.ctaTransition.includes('transform'),
+      'CTA still transitions transform with reduced motion',
+    );
+    assert.ok(
+      !reduced.badgeTransition.includes('transform'),
+      'badge still transitions transform with reduced motion',
+    );
+
+    await page.emulateMedia({ reducedMotion: 'no-preference' });
+    await page.reload();
+    const animated = await page.evaluate(() => ({
+      hero: getComputedStyle(document.querySelector('main h1')).animationName,
+      blob: getComputedStyle(document.querySelector('.blob-a')).animationName,
+    }));
+
+    assert.ok(animated.hero.includes('rise'), 'hero entrance did not return with motion allowed');
+    assert.ok(animated.hero.includes('shimmer'), 'hero shimmer did not return with motion allowed');
+    assert.ok(animated.blob.includes('drift-a'), 'aurora drift did not return with motion allowed');
+  } finally {
+    await context.close();
+  }
+});
 
 // Without scripting
 
