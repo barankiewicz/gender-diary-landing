@@ -6,6 +6,15 @@
   "themeSystem": "Systemowy",
   "themeLight": "Jasny",
   "themeDark": "Ciemny",
+  "meta": {
+    "cardAlt": "Napis Gender Diary na ciemnym tle.",
+    "landing": {
+      "description": "Dziennik tranzycji. We wpisie mieści się nastrój, notatka, tagi, zdjęcia i skale, które nazywasz po swojemu. Zostaje na twoim urządzeniu, konta nie zakładasz."
+    },
+    "privacy": {
+      "description": "Gdzie jest twój dziennik, co daje blokada aplikacji i czego nie daje, czego aplikacja jeszcze nie szyfruje i co widzi serwer WWW."
+    }
+  },
   "hero": {
     "headline": "Dziennik tranzycji, który zostaje na twoim urządzeniu.",
     "subheadline": "Zapisz, jak minął dzień, i jak ci w nim było z własną płcią. Konta nie zakładasz, synchronizować nie ma czego."

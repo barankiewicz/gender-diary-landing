@@ -1,6 +1,6 @@
 # Product Marketing Context
 
-**Document version:** v8
+**Document version:** v9
 **Last updated:** 2026-08-12
 
 Read this before writing any copy for this site. It settles who the copy is for,
@@ -443,6 +443,41 @@ person can check the provenance rather than take it on trust.
 | What the web host can see | Co widzi serwer WWW | The parity table, ticket 05, built on „serwer WWW” from the term table |
 | What none of this protects against | Czego to nie chroni | The parity table, ticket 05 |
 
+**Descriptions and the social card, ticket 07.** Four sentences of new copy, one
+description per page per language, plus the card's alt text. Nothing under `content/`
+supplied them: a description is written for a search result and a link preview, and no
+blockquote in the copy files is that. Like the headings above, they have not been
+through `copywriting` or `copy-editing`, and the Polish joins the review ticket 05 owes.
+Every clause is built on a claim from the tables at the end of this document, and the
+Polish was written as Polish from those claims: „konta nie zakładasz" and „które
+nazywasz po swojemu" come from the shipped Polish catalogue rather than from the English
+column.
+
+| Page | English | Polish |
+|---|---|---|
+| Landing | A diary for tracking gender transition. An entry holds a mood, a note, photos and scales you name yourself. It stays on your device, and there is no account. | Dziennik tranzycji. We wpisie mieści się nastrój, notatka, tagi, zdjęcia i skale, które nazywasz po swojemu. Zostaje na twoim urządzeniu, konta nie zakładasz. |
+| Privacy | Where your journal is, what app lock does and does not do, what is not encrypted yet, and what a web host can see. | Gdzie jest twój dziennik, co daje blokada aplikacji i czego nie daje, czego aplikacja jeszcze nie szyfruje i co widzi serwer WWW. |
+| Card alt | The words Gender Diary on a dark background. | Napis Gender Diary na ciemnym tle. |
+
+App lock appears in the privacy description with its counterweight in the same clause,
+because the claim table requires that everywhere it is named. The landing description
+says nothing about Android, offline use or encryption at rest.
+
+**Titles stay short, and that is what pays for spec story 37.** A description is read in
+a search result and in a preview somebody chose to send. A title is read in a browser
+history, a tab, a bookmark and the first line of that preview, none of which the reader
+asked for. So the title is the product's name, on the privacy page that page's own
+heading, and nothing about what kind of app this is; the words a person searches with go
+in the description. The cost is real: "a transition journal that stays on your device"
+in a title is what an SEO pass would ask for, and it is not there. What the site cannot
+soften is its own name and its URL, so the claim is not that a title hides anything, only
+that it adds nothing the name already gives away. A test reads every title and fails on a
+list of words that would.
+
+**The card is the wordmark and nothing else,** for the same reason. It is a local PNG,
+rendered by `scripts/social-card.mjs` and committed, and it shows no journal, invented or
+otherwise. What the app is goes in `og:description` next to it.
+
 **The source block cannot be published, and its gate half-says so.** `content/*/landing.md`
 marks it *Gate: shipped as far as the licence goes*, then names a condition that has not
 been met: the phrasing needs the Journal repository to be public, and it is private. The
@@ -556,6 +591,7 @@ this site to repeat them.
 
 *Newest first. One line per revision: what changed and why.*
 
+- v9 (2026-08-12) - Recorded the four page descriptions and the card alt text ticket 07 wrote, flagged like the headings as not having been through copywriting or copy-editing. Wrote down why titles stay short: a title lands in a history entry and a preview's first line, which the reader never asked for, so the searchable words live in the description instead, and spec story 37 is paid for with the title keywords an SEO pass would want.
 - v8 (2026-08-12) - Recorded the section headings ticket 13 needed, because the copy files organise themselves with English headings that are commentary rather than copy. Eight had to be written for the landing page and none for the privacy page, where ticket 05's parity table had already settled the Polish; both tables now say which is which and where each string came from. Flagged the eight as not having been through copywriting or copy-editing. Recorded that the source block cannot be published: its gate says shipped as far as the licence goes, and the Journal repository it tells people to go and read is private, so the site currently states no licence.
 - v7 (2026-08-12) - The project speaks as one person, in the first person singular, and does not name that person or state that they are trans. Reversed the channel-equality rule: Google Play is listed last and the page says why, because even-handedness between one channel that reports an install to Google and three that do not was a policy the reader had no use for. Added five style rules the old list did not catch, all of them ways this copy sounded institutional rather than promotional: no talking about the copy on the copy, no epigram per paragraph, no coyness about the word gender, no neutrality the reader has no use for, no tutorials.
 - v6 (2026-08-12) - Start journal is „Otwórz dziennik” in Polish, decided by ticket 06 and reasoned in the term table. The version line above said v4 while this list was already on v5, so it now says what the list says.

@@ -6,6 +6,15 @@
   "themeSystem": "System",
   "themeLight": "Light",
   "themeDark": "Dark",
+  "meta": {
+    "cardAlt": "The words Gender Diary on a dark background.",
+    "landing": {
+      "description": "A diary for tracking gender transition. An entry holds a mood, a note, photos and scales you name yourself. It stays on your device, and there is no account."
+    },
+    "privacy": {
+      "description": "Where your journal is, what app lock does and does not do, what is not encrypted yet, and what a web host can see."
+    }
+  },
   "hero": {
     "headline": "A transition journal that stays on your device.",
     "subheadline": "Write down how a day went, and track how your gender felt that day. No account, nothing to sync."

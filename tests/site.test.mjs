@@ -884,6 +884,274 @@ test('the two languages gate the same blocks in the same order', () => {
   }
 });
 
+// The head: a search result, a history entry, a link preview (ticket 07)
+
+/* Every URL the site serves as a page, including the language gateway, which
+   is a page for exactly this purpose: it is what a preview is built from when
+   somebody pastes the origin. Written out rather than derived, like the paths
+   above, so that a page arriving without metadata fails here by name. */
+const HEAD_PAGES = ['/', '/en/', '/pl/', '/en/privacy/', '/pl/privacy/'];
+
+/** The title of each page, character for character. These are short on
+    purpose and ticket 07 settled that they stay short: a title is the one
+    piece of metadata a reader did not ask for, since it lands in their
+    history, their tabs, their bookmarks and the first line of any preview.
+    So it carries the product's name, and on the privacy page that page's own
+    heading, and nothing about what kind of app this is. */
+const TITLES = {
+  '/': 'Gender Diary',
+  '/en/': 'Gender Diary',
+  '/pl/': 'Gender Diary',
+  '/en/privacy/': 'What Gender Diary protects, and what it does not',
+  '/pl/privacy/': 'Co Gender Diary chroni, a czego nie chroni',
+};
+
+/** The description of each page, character for character. This is where the
+    words a person searches with live, because a description is shown in a
+    search result and in a preview a sender chose to send, and never in a
+    history entry. The gateway carries the English landing page's, which is
+    the page a visitor asking for neither language is about to be sent to. */
+const DESCRIPTIONS = {
+  '/en/':
+    'A diary for tracking gender transition. An entry holds a mood, a note, photos and scales you name yourself. It stays on your device, and there is no account.',
+  '/pl/':
+    'Dziennik tranzycji. We wpisie mieści się nastrój, notatka, tagi, zdjęcia i skale, które nazywasz po swojemu. Zostaje na twoim urządzeniu, konta nie zakładasz.',
+  '/en/privacy/':
+    'Where your journal is, what app lock does and does not do, what is not encrypted yet, and what a web host can see.',
+  '/pl/privacy/':
+    'Gdzie jest twój dziennik, co daje blokada aplikacji i czego nie daje, czego aplikacja jeszcze nie szyfruje i co widzi serwer WWW.',
+};
+DESCRIPTIONS['/'] = DESCRIPTIONS['/en/'];
+
+/** What a title may not say, in either language. Spec story 37: reading about
+    this product should not announce itself in a browser history. The name is
+    the name and the URL says it too, so the claim is not that a title hides
+    anything; it is that a title adds nothing the name already gives away. The
+    words below are what an SEO pass would put in a title and what this site
+    puts in a description instead. */
+const NOT_IN_A_TITLE = [
+  'transition',
+  'tranzycj',
+  'trans',
+  'journal',
+  'dziennik',
+  'mood',
+  'nastrój',
+  'hrt',
+  'hormon',
+  'queer',
+  'lgbt',
+];
+
+/** The social card, as src/lib/site.ts declares it. Written out a second time
+    for the reason SITE_ORIGIN is: a test that imported the declaration would
+    agree with a wrong one. The picture is local, and the size is asserted
+    against the file rather than taken from the tags. */
+const SOCIAL_CARD = { url: `${SITE_ORIGIN}/social-card.png`, width: 1200, height: 630 };
+
+/** Keys and values structured data on this site may never contain, whatever
+    the schema vocabulary offers. There is no rating, no offer, no price, no
+    review and no count of anything, so a machine-readable listing that
+    carried one would be an invention in the format most likely to be
+    believed. `author` and `publisher` are here too: the site names nobody,
+    which is its own decision about its author and not an oversight. */
+const NOT_IN_STRUCTURED_DATA = [
+  'rating',
+  'review',
+  'offer',
+  'price',
+  'aggregate',
+  'author',
+  'publisher',
+  'testimonial',
+  'interactioncount',
+  'downloadcount',
+  'installcount',
+];
+
+/** Every meta tag on a page, keyed by whichever of `property` and `name` it
+    used, so that og: tags and the plain description read the same way. */
+const metaTags = (page) =>
+  page.evaluate(() =>
+    Object.fromEntries(
+      [...document.querySelectorAll('meta[name], meta[property]')].map((tag) => [
+        tag.getAttribute('property') ?? tag.getAttribute('name'),
+        tag.getAttribute('content'),
+      ]),
+    ),
+  );
+
+test('every page has its own title and description, in the file as served', async () => {
+  /* Scripting off throughout this section: a search engine reading the file
+     and a chat client building a preview do not run scripts, and the gateway
+     would otherwise redirect out from under the assertions. */
+  const { context, page } = await visitor({ javaScriptEnabled: false });
+  try {
+    for (const path of HEAD_PAGES) {
+      await page.goto(base + path);
+      assert.equal(await page.title(), TITLES[path], `${path}: wrong title`);
+
+      const description = (await metaTags(page)).description;
+      assert.equal(description, DESCRIPTIONS[path], `${path}: wrong description`);
+      /* A search result shows about 160 characters and cuts the rest. The
+         ceiling is here so that an edit which overflows it is a failure with
+         the sentence in the message rather than a truncation somebody
+         notices in a live result. */
+      assert.ok(
+        description.length <= 160,
+        `${path}: the description is ${description.length} characters and a search result shows about 160`,
+      );
+    }
+  } finally {
+    await context.close();
+  }
+});
+
+test('no title says what kind of app this is', async () => {
+  const { context, page } = await visitor({ javaScriptEnabled: false });
+  try {
+    for (const path of HEAD_PAGES) {
+      await page.goto(base + path);
+      /* The product's name is allowed to be the product's name. What the
+         test looks at is everything else in the title. */
+      const beyondTheName = (await page.title()).replaceAll('Gender Diary', '').toLowerCase();
+      for (const word of NOT_IN_A_TITLE) {
+        assert.ok(
+          !beyondTheName.includes(word),
+          `${path}: the title says "${word}", which a browser history then says for the reader`,
+        );
+      }
+    }
+  } finally {
+    await context.close();
+  }
+});
+
+test('a shared link previews as this app, from a picture on this origin', async () => {
+  const { context, page } = await visitor({ javaScriptEnabled: false });
+  try {
+    for (const path of HEAD_PAGES) {
+      await page.goto(base + path);
+      const tags = await metaTags(page);
+      const locale = path.startsWith('/pl/') ? 'pl' : 'en';
+
+      assert.deepEqual(
+        {
+          type: tags['og:type'],
+          siteName: tags['og:site_name'],
+          title: tags['og:title'],
+          description: tags['og:description'],
+          url: tags['og:url'],
+          locale: tags['og:locale'],
+          alternate: tags['og:locale:alternate'],
+          image: tags['og:image'],
+          width: tags['og:image:width'],
+          height: tags['og:image:height'],
+          card: tags['twitter:card'],
+        },
+        {
+          type: 'website',
+          siteName: 'Gender Diary',
+          title: TITLES[path],
+          description: DESCRIPTIONS[path],
+          url: SITE_ORIGIN + path,
+          locale: locale === 'pl' ? 'pl_PL' : 'en_GB',
+          alternate: locale === 'pl' ? 'en_GB' : 'pl_PL',
+          image: SOCIAL_CARD.url,
+          width: String(SOCIAL_CARD.width),
+          height: String(SOCIAL_CARD.height),
+          card: 'summary_large_image',
+        },
+        `${path}: the preview a link builds is wrong`,
+      );
+
+      /* The alt text is the picture's, in the reader's language, and the
+         picture is on this origin. A card image from anywhere else would be
+         the site's first third-party resource. */
+      assert.ok(tags['og:image:alt']?.includes('Gender Diary'), `${path}: the card has no alt text`);
+      assert.ok(
+        tags['og:image'].startsWith(SITE_ORIGIN + '/'),
+        `${path}: the card image is not served from this origin`,
+      );
+    }
+  } finally {
+    await context.close();
+  }
+});
+
+test('the social card is a real picture of the size its tags claim', async () => {
+  const { context, page } = await visitor({});
+  try {
+    const response = await page.goto(`${base}/social-card.png`);
+    assert.equal(response.status(), 200, 'the social card is not in the build');
+    assert.equal(response.headers()['content-type'], 'image/png');
+
+    /* Decoded rather than measured from the file: og:image:width and
+       og:image:height are what a preview lays the card out with, and a
+       picture that is not that size is laid out wrong. */
+    await page.goto(`${base}/en/`);
+    const decoded = await page.evaluate(
+      (url) =>
+        new Promise((resolve, reject) => {
+          const image = new Image();
+          image.onload = () => resolve({ width: image.naturalWidth, height: image.naturalHeight });
+          image.onerror = () => reject(new Error('the social card did not decode as an image'));
+          image.src = url;
+        }),
+      `${base}/social-card.png`,
+    );
+    assert.deepEqual(decoded, { width: SOCIAL_CARD.width, height: SOCIAL_CARD.height });
+  } finally {
+    await context.close();
+  }
+});
+
+test('structured data describes the app, and claims nothing the page does not', async () => {
+  const { context, page } = await visitor({ javaScriptEnabled: false });
+  try {
+    for (const locale of ['en', 'pl']) {
+      await page.goto(`${base}/${locale}/`);
+      const blocks = await page
+        .locator('script[type="application/ld+json"]')
+        .evaluateAll((found) => found.map((script) => script.textContent));
+      assert.equal(blocks.length, 1, `/${locale}/: expected exactly one JSON-LD block`);
+
+      const data = JSON.parse(blocks[0]);
+      assert.deepEqual(data, {
+        '@context': 'https://schema.org',
+        '@type': 'WebApplication',
+        name: 'Gender Diary',
+        url: JOURNAL_URL,
+        description: DESCRIPTIONS[`/${locale}/`],
+        applicationCategory: 'LifestyleApplication',
+        inLanguage: ['en', 'pl'],
+      });
+
+      /* Belt as well as braces, and the braces are the comparison above: a
+         property added anywhere in the block, at any depth, is read against
+         the list of what this site may not say about itself. */
+      const seen = JSON.stringify(data).toLowerCase();
+      for (const word of NOT_IN_STRUCTURED_DATA) {
+        assert.ok(!seen.includes(word), `/${locale}/: the structured data mentions "${word}"`);
+      }
+    }
+
+    /* The pages that describe no application carry no listing for one. The
+       privacy page says what the app does not do, and the gateway shows a
+       name and two links. */
+    for (const path of ['/', '/en/privacy/', '/pl/privacy/']) {
+      await page.goto(base + path);
+      assert.equal(
+        await page.locator('script[type="application/ld+json"]').count(),
+        0,
+        `${path}: this page describes no application, so it should carry no listing for one`,
+      );
+    }
+  } finally {
+    await context.close();
+  }
+});
+
 for (const { name, run } of tests) {
   try {
     await run();
