@@ -9,6 +9,10 @@ its sentences are gated by the Journal's release state rather than by editorial
 judgement. The acquisition section is ticket 06. Page titles and descriptions are
 ticket 07.
 
+**What is copy and what is not.** Everything inside a blockquote is the copy itself.
+Everything outside one is commentary: gates, rationale and handoffs. Tickets 05 and 08
+can take the blockquotes alone and lose nothing they need.
+
 **Gate markers.** Every block below is either live or staged. `Gate: shipped` means a
 person can go and see the behaviour today. Anything else names the Journal ticket that
 has to land before the block may be published, per the claim table in the marketing
@@ -62,8 +66,7 @@ Start journal. Owned by ticket 06.
 
 > Gender Diary is a diary for tracking gender transition. An entry holds a mood, a
 > note, your scales, tags and photos, and it only needs one of those to count. Write
-> several in one day, because a day is not one feeling. Backdate one to a day you
-> missed.
+> several in one day if one does not cover it. Backdate one to a day you missed.
 >
 > Mood trackers have the right shape for a daily habit and nowhere to put the thing
 > you most want to track. Gender Diary keeps the shape and adds the scales. It records
@@ -91,7 +94,7 @@ Start journal. Owned by ticket 06.
 > site.
 
 Place it where a person meets the first screenshot, not in a footnote. The captions on
-the three screens that show written entries repeat it in short form, because those are
+the five screens that show written entries repeat it in short form, because those are
 the ones a reader might otherwise take for someone's real diary.
 
 ### Captions
@@ -101,8 +104,8 @@ the ones a reader might otherwise take for someone's real diary.
 **Home**
 
 > The greeting, what is coming up, and the last seven days in whatever colour you
-> picked. The mood row logs an entry for right now in one action, which matters most
-> on the days you have the least in you.
+> picked. The mood row logs an entry for right now in one action, so logging something
+> stays possible on a day when writing is not. Invented entries.
 
 **An entry**
 
@@ -116,19 +119,20 @@ the ones a reader might otherwise take for someone's real diary.
 
 **One day, twice**
 
-> Gender is not steady from morning to night, so a day holds as many entries as it
-> needs and stamps each one with its time. The day's own colour is their average.
-> Invented entries.
+> Gender can shift through a day, so a day holds as many entries as it needs and
+> stamps each one with its time. The day's own colour is their average. Invented
+> entries.
 
 **Search**
 
 > Searches your notes and your tags as you type. Diacritics do not matter in either
-> direction: type lozko and it finds łóżko.
+> direction: type lozko and it finds łóżko. Invented entries.
 
 **Six months of one scale**
 
-> Every scale gets its own chart and its own average over the range you pick. Days
-> with more than one entry are averaged, and the chart tells you when it did that.
+> Every scale gets its own chart and its own average over the stretch of days you
+> pick. Days with more than one entry are averaged, and the list behind the chart says
+> which days those were.
 
 **Milestones**
 
@@ -151,7 +155,8 @@ the ones a reader might otherwise take for someone's real diary.
 > **Entries.** A mood on five levels, a note, tags, photos, and your scales. Several a
 > day, or backdated to a day you missed.
 >
-> **Scales.** Five come built in, including euphoria to dysphoria. Make your own with
+> **Scales.** Five come built in, among them Gender feeling, which runs from dysphoria
+> at one end to euphoria at the other. Make your own with
 > your own two end labels and your own range, and group the ones you use into a preset
 > so the entry screen only asks what you actually track.
 >
@@ -170,20 +175,20 @@ the ones a reader might otherwise take for someone's real diary.
 >
 > **Search.** Your notes and tag labels, matched as you type, ignoring diacritics.
 >
-> **Charts.** One per scale, over 7 to 365 days, with your streak. Open a point and it
-> shows you the days underneath it, so you can check the line against what you
-> actually wrote.
+> **Charts.** One per scale, over 7 to 365 days, with your streak. Open one for the
+> dated list of values behind it, so the line is something you can check rather than
+> take on trust.
 >
 > **Tag insights.** For a given scale, how days with a tag compare to days without it.
-> An observation, not a verdict. Tags with fewer than three entries in the range are
-> left out, because at that size the difference is noise.
+> An observation, not a verdict. Tags with fewer than three entries in that stretch
+> are left out, because at that size the difference is noise.
 >
-> **Recap.** When a month ends, what it held.
+> **Recap.** When a month ends, what it held. A finished year gets the same.
 >
 > **Milestones and the timeline.** Countdowns ahead, anniversaries behind.
 >
-> **Lab results.** Your own numbers on a chart over time. The app does not compare
-> them to anything, colour them, or tell you what they mean.
+> **Lab results.** Keep your own numbers and watch them over time. The app does not
+> interpret them.
 
 ### Keeping it
 
@@ -197,17 +202,25 @@ the ones a reader might otherwise take for someone's real diary.
 > moods will map before it writes anything, and it only ever merges.
 >
 > **Plain export.** CSV or JSON, for a spreadsheet or for keeping your own copy. It is
-> not encrypted, the app says so before it writes the file, and it asks again.
+> not encrypted, and the app says so and makes you confirm before it writes the file.
 >
-> **Backup reminder.** When your last export is more than 30 days old, the home screen
-> says so once. You can dismiss it.
+> **When it has been a while.** If your last Archive is more than 30 days old, the
+> home screen says so once. You can dismiss it.
 
-### Keeping it to yourself
+### If you need to be careful
 
 *Gate: shipped, including disguise and quick exit, which Journal ticket 15 records as
-implemented for the web today. Every sentence here needs the app-lock counterweight
-kept attached, per the marketing context. Ticket 04 owns the longer treatment.*
+implemented for the web today. App lock, disguise, lock on leave and quick exit all
+default to off in the Journal's preference catalogue, so "off until you turn it on" is
+a checkable statement and not a reassurance. Every sentence here keeps the app-lock
+counterweight attached, per the marketing context. Ticket 04 owns the longer
+treatment.*
 
+> Everything in this section is off until you turn it on. Keeping a journal about your
+> own life is not something to be ashamed of, and the app does not behave as though it
+> is. These exist because some people's circumstances are genuinely unsafe, and only
+> you know whether that is yours.
+>
 > **App lock.** A PIN in front of the app. It stops someone picking up your unlocked
 > phone and reading it. It is not encryption of what is stored, and this site will not
 > imply that it is.
@@ -226,10 +239,10 @@ kept attached, per the marketing context. Ticket 04 owns the longer treatment.*
 > calendar included, and each one works in light and dark.
 >
 > **Colour never judges.** No red for a bad day and no green for a good one. The heat
-> map is one colour at different strengths, and an empty day is just empty.
+> map is one colour at different strengths, and an empty day stays empty.
 >
-> **Two languages.** English and Polish, switchable in settings, with the app's own
-> dates and numbers following whichever you pick.
+> **Two languages.** English and Polish, switchable in settings, with dates following
+> whichever you pick.
 
 ### Staged, not published
 
@@ -254,7 +267,10 @@ sentence on this site may say the app runs on Android.*
 > **Scheduled backup.** An encrypted Archive written to a folder you pick, weekly or
 > monthly, without you remembering to.
 
-*Gate: Journal ticket 03.*
+*Gate: Journal ticket 03, on its evidence rather than on its status line. The ticket
+reads `Status: done`, but every one of its acceptance boxes is unchecked and the
+repository has no service worker, no manifest and no PWA plugin. Neither sentence below
+may be published until those exist. The stale status is worth raising over there.*
 
 > **Install it.** Add it to your home screen and open it without a browser in the way.
 >
@@ -267,7 +283,7 @@ file. Listed here only so the feature summary does not look complete without it.
 
 ---
 
-## Source, license and support
+## Source, licence and support
 
 ### Source
 

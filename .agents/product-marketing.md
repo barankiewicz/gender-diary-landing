@@ -1,6 +1,6 @@
 # Product Marketing Context
 
-**Document version:** v2
+**Document version:** v4
 **Last updated:** 2026-08-12
 
 Read this before writing any copy for this site. It settles who the copy is for,
@@ -272,6 +272,13 @@ rules:
 - No selling through fear. The reader already knows what is at risk, better than the
   copy does. State the threat model once, plainly, and move on. Dwelling on it is both
   manipulative and insulting.
+- No treating the app as a thing to hide. App lock, disguise, lock on leave and quick
+  exit all default to off in the Journal's preference catalogue, and copy presents them
+  as available rather than expected. Keeping a journal about your own life is an
+  ordinary thing to do, and a page that leads with concealment says the opposite. This
+  audience is told to be discreet often enough without a landing page joining in. Name
+  the controls, say they stay off until someone turns them on, and leave the judgement
+  to the person whose situation it actually is.
 - No emoji, no em dashes, no rule-of-three lists that were not three things to begin
   with.
 - No claim without shipped evidence, per the table below.
@@ -357,10 +364,17 @@ document has to be specific enough to argue with.
 
 Ticket 04 needs every claim on the privacy page annotated with the shipped behaviour
 it rests on. Ticket 04 owns that page-level annotation; this table is the input it
-starts from, extended to cover the rest of the site. Neither is gate authority. That
-is the Journal repository's Phase 2 spec, under *Privacy and public claims*, and the
-`Status:` lines on its tickets. Where this table and those disagree, they win, and
-this table is the thing that was out of date.
+starts from, extended to cover the rest of the site. Neither is gate authority. That is
+the Journal repository's Phase 2 spec, under *Privacy and public claims*.
+
+**Evidence beats the status line, and this is not hypothetical.** Phase 2 ticket 03
+reads `Status: done` while every one of its acceptance boxes is unchecked and the
+repository has no service worker, no manifest and no PWA plugin. Anyone gating on the
+status line alone would have published "works offline" and "installs from the browser"
+on the strength of a ticket nobody finished ticking. The spec already settles it: "No
+marketing claim becomes true because it appears in this document. Claims go live only
+after their corresponding release gate has executable evidence." So a `done` status is
+a prompt to go and look, never the proof itself. Go and find the artifact.
 
 **Available now.** Phase 1 is complete in the Journal repository.
 
@@ -388,7 +402,7 @@ this table is the thing that was out of date.
 | The Journal is encrypted at rest, naming what is covered and any web and Android difference | Journal ticket 09, and its gate: a copy of closed persistent files reveals no protected text, numbers, Reminder titles, photos or thumbnails without the unlock secret |
 | A Journal passphrase is required again after the session ends, and cannot be recovered | Journal tickets 09 and 10 |
 | Android protects the key through the Keystore | Journal tickets 11 and 13 |
-| Works offline, and installs from the browser | Journal ticket 03. There is no service worker today, so neither is true yet |
+| Works offline, and installs from the browser | Journal ticket 03, on evidence. Its status reads `done`, but its acceptance boxes are unchecked and there is no service worker, manifest or PWA plugin, so neither is true yet |
 | Reminders and the daily check-in | Journal tickets 11 and 14. Both are Android-only, so the Android block applies first |
 | Disguise mode and quick exit, on Android | Journal tickets 11 and 15. The launcher alias is the Android half; the web half is already available above |
 | Scheduled encrypted backup to a folder you pick | Journal tickets 11 and 16. Android only |
@@ -415,5 +429,7 @@ this site to repeat them.
 
 *Newest first. One line per revision: what changed and why.*
 
+- v4 (2026-08-12) - Evidence beats the status line. Phase 2 ticket 03 reads done with every acceptance box unchecked and no service worker in the repository, which would have let "works offline" onto the page.
+- v3 (2026-08-12) - Added the rule that privacy controls are presented as optional rather than expected. They all default to off, and copy that leads with concealment tells this audience the app is something to be ashamed of.
 - v2 (2026-08-12) - Corrected the claim table after review: added the Android row, since no Android project exists and the old table gated only the store links; moved web disguise and quick exit to available, which ticket 15 says are shipped. Replaced the glossary definitions with a traps-only table pointing at CONTEXT.md. Added the Polish voice section that ticket 05 needs.
 - v1 (2026-08-12) - Initial context. Audience, jobs, objections, voice and vocabulary for the landing site, plus the claim table that gates every later content ticket.
