@@ -1,6 +1,14 @@
 <script lang="ts">
   import ThemeControl from '$lib/ThemeControl.svelte';
-  import { LANGUAGE_KEY, LOCALES, SITE_ORIGIN, messages, pathFor, type Locale } from '$lib/site';
+  import {
+    JOURNAL_URL,
+    LANGUAGE_KEY,
+    LOCALES,
+    SITE_ORIGIN,
+    messages,
+    pathFor,
+    type Locale,
+  } from '$lib/site';
 
   let { locale }: { locale: Locale } = $props();
 
@@ -69,7 +77,27 @@
 
     <section>
       <h2>{m.sectionAcquisition}</h2>
-      <p>{m.copyPending}</p>
+      <p>{m.acquisitionIntro}</p>
+
+      <!-- The one action on the page: a plain link, in this tab, to the URL
+           and nothing appended to it. What may not ride along with it is on
+           JOURNAL_URL in $lib/site. -->
+      <p><a class="action" href={JOURNAL_URL}>{m.startJournal}</a></p>
+
+      <p>{m.acquisitionAndroid}</p>
+
+      <!-- Alphabetical, which is the only order that ranks nothing. A channel
+           becomes a link when it has an artifact behind it (Journal ticket 18)
+           and is its own status until then. -->
+      <ul>
+        {#each m.channels as channel (channel.name)}
+          <li>
+            <strong>{channel.name}</strong>
+            <span class="status">{m.channelStatus}</span>
+            <p>{channel.note}</p>
+          </li>
+        {/each}
+      </ul>
     </section>
   </main>
 </div>

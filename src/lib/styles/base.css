@@ -90,6 +90,24 @@ body {
   font-weight: 600;
 }
 
+/* The one action on the page. It reads as a control rather than as running
+   text; how much weight it carries is ticket 09's decision. */
+.action {
+  display: inline-block;
+  border: 1px solid currentColor;
+  border-radius: 0.25rem;
+  color: inherit;
+  font-weight: 600;
+  padding: 0.5rem 1rem;
+  text-decoration: none;
+}
+
+/* An availability status is not a control and must not read as one. */
+.status {
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+
 /* The theme control needs scripting to do anything, so it is only shown once
    the script in app.html has said scripting is running. */
 :root:not([data-js]) .theme-control {
