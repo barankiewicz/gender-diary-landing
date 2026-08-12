@@ -16,7 +16,7 @@
      passes, and tests/site.test.mjs fails if the gated block turns up here
      first. -->
 <PageShell {locale} page="privacy" title={privacy.title}>
-  <article>
+  <article class="scrim">
     <h1>{privacy.title}</h1>
     <p class="intro">{privacy.intro}</p>
 

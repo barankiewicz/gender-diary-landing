@@ -15,13 +15,7 @@
        18). The acquisition section below keeps the honest wording: nothing on
        Android exists yet. -->
   <div class="hero">
-    <div class="aurora" aria-hidden="true">
-      <div class="blob blob-a"></div>
-      <div class="blob blob-b"></div>
-      <div class="blob blob-c"></div>
-    </div>
-
-    <div class="hero-inner">
+    <div class="hero-inner scrim">
       <h1 class="enter shimmer" style:--enter={0}>{m.pageTitle}</h1>
       <p class="headline enter" style:--enter={1}>{m.hero.headline}</p>
       <p class="subheadline enter" style:--enter={2}>{m.hero.subheadline}</p>
@@ -37,14 +31,14 @@
     </div>
   </div>
 
-  <section class="overview reveal">
+  <section class="overview reveal scrim">
     <h2>{m.sectionOverview}</h2>
     <div class="overview-columns">
       <Prose paragraphs={m.overview} />
     </div>
   </section>
 
-  <section class="privacy-handoff reveal">
+  <section class="privacy-handoff reveal scrim">
     <h2>{m.sectionPrivacy}</h2>
     <div class="panel">
       <Prose paragraphs={m.privacyHandoff} />
@@ -54,7 +48,7 @@
     </div>
   </section>
 
-  <section class="tour reveal">
+  <section class="tour reveal scrim">
     <h2>{m.sectionTour}</h2>
     <p class="tour-intro">{m.tourIntro}</p>
 
@@ -73,7 +67,7 @@
     </ol>
   </section>
 
-  <section class="features">
+  <section class="features scrim">
     <h2 class="reveal">{m.sectionFeatures}</h2>
     {#each m.features as group (group.group)}
       <!-- The groups are headed rather than run together because one of them
@@ -99,7 +93,7 @@
     {/each}
   </section>
 
-  <section class="acquisition reveal">
+  <section class="acquisition reveal scrim">
     <h2>{m.sectionAcquisition}</h2>
     <p class="acquisition-intro">{m.acquisitionIntro}</p>
 
@@ -127,7 +121,7 @@
     </ul>
   </section>
 
-  <section class="support reveal">
+  <section class="support reveal scrim">
     <h2>{m.sectionSupport}</h2>
     <Prose paragraphs={m.support} />
   </section>
@@ -155,72 +149,28 @@
   /* 56px is the sticky header's one-row height. On viewports narrow enough
      for the controls to wrap, the sum overshoots the viewport by a row and
      the page simply scrolls; the mobile override below steps in before that
-     looks wrong. */
+     looks wrong.
+
+     No `overflow: clip` any more. It was here to hold the aurora inside the
+     hero, and holding the aurora inside the hero is exactly what put a hard
+     horizontal line across the page at the first scroll (ticket 17). The
+     layer is fixed to the viewport in Aura.svelte now and clips itself. */
   .hero {
     position: relative;
     display: grid;
     align-items: center;
     min-height: calc(100dvh - 56px);
-    overflow: clip;
   }
 
-  .aurora {
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-  }
-
-  .blob {
-    position: absolute;
-    border-radius: 50%;
-    filter: blur(70px);
-    will-change: transform;
-  }
-
-  .blob-a {
-    width: 55vw;
-    height: 55vw;
-    right: -12vw;
-    top: -18vw;
-    background: radial-gradient(circle, var(--blob-blue), transparent 65%);
-  }
-
-  .blob-b {
-    width: 48vw;
-    height: 48vw;
-    right: 4vw;
-    bottom: -16vw;
-    background: radial-gradient(circle, var(--blob-pink), transparent 65%);
-  }
-
-  .blob-c {
-    width: 30vw;
-    height: 30vw;
-    right: 12vw;
-    top: 28%;
-    background: radial-gradient(circle, var(--blob-white), transparent 60%);
-  }
-
-  /* The drift keyframes live in base.css behind the same media query, which
-     is the gate for everything that moves on the site. With reduced motion
-     the blobs still paint, parked where their drift would start. */
-  @media (prefers-reduced-motion: no-preference) {
-    .blob-a {
-      animation: drift-a 19s ease-in-out infinite;
-    }
-
-    .blob-b {
-      animation: drift-b 23s ease-in-out infinite;
-    }
-
-    .blob-c {
-      animation: drift-c 27s ease-in-out infinite;
-    }
-  }
-
+  /* min-width: 0 because this is a grid item, and a grid track's automatic
+     minimum is its content's min-content size. At 200% text the longest word
+     in the headline is wider than a phone, so the track grew to fit it and
+     took the document sideways with it. The clip that used to be on .hero hid
+     that by cutting the word off instead, which is not better. */
   .hero-inner {
     position: relative;
     width: 100%;
+    min-width: 0;
     max-width: 68rem;
     margin: 0 auto;
     padding: 2rem clamp(1rem, 4vw, 2.5rem) 4rem;
@@ -243,8 +193,14 @@
   /* Ink for most of its length, and the flag's two colours at the end of the
      last line. The endpoints are the theme's text-safe pair, so the gradient
      never trades contrast for the effect. */
+  /* min() around the clamp's floor, for the reason the .cards grid uses one:
+     a floor written in rem is a promise about the smallest this may be, and at
+     200% text 2.4rem is 76.8px, which sets "transition" wider than the phone
+     holding it. The min() lets the floor fall back to what the viewport can
+     actually carry and leaves the 2.4rem intent untouched everywhere it
+     fits, which is every case except a doubled text size on a phone. */
   .headline {
-    font-size: clamp(2.4rem, 7vw, 4.75rem);
+    font-size: clamp(min(2.4rem, 12vw), 7vw, 4.75rem);
     font-weight: 600;
     line-height: 1.05;
     letter-spacing: -0.03em;
@@ -476,13 +432,13 @@
   /* Two tinted cards per grid, so the grids are not a wall of one surface. */
   .cards p:nth-child(4n + 1) {
     background:
-      radial-gradient(140% 120% at 0% 0%, var(--blob-blue), transparent 55%),
+      radial-gradient(140% 120% at 0% 0%, var(--tint-blue), transparent 55%),
       var(--surface);
   }
 
   .cards p:nth-child(4n + 3) {
     background:
-      radial-gradient(140% 120% at 100% 100%, var(--blob-pink), transparent 55%),
+      radial-gradient(140% 120% at 100% 100%, var(--tint-pink), transparent 55%),
       var(--surface);
   }
 

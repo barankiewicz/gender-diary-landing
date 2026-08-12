@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
+  import Aura from '$lib/Aura.svelte';
   import ThemeControl from '$lib/ThemeControl.svelte';
   import {
     LANGUAGE_KEY,
@@ -85,6 +86,12 @@
     {@html structuredDataScript(locale)}
   {/if}
 </svelte:head>
+
+<!-- The site's ground, under both pages and under the header. The landing page
+     leads with it and the privacy page runs it at half, which is the whole of
+     the difference between them: one layer, one set of tokens, two
+     intensities (ticket 17). -->
+<Aura strength={page === 'landing' ? 'full' : 'quiet'} />
 
 <header class="controls">
   {#if page !== 'landing'}

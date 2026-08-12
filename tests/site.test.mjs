@@ -1489,6 +1489,293 @@ test('structured data describes the app, and claims nothing the page does not', 
   }
 });
 
+// The scrim: what a word is actually painted on (ticket 17)
+
+/* The aura used to be an ornament inside the hero, so every paragraph on the
+   page sat on --page and the token ratios above were the whole story. It is a
+   page-wide fixed layer now, which means a paragraph sits on --page plus
+   whatever has drifted behind it, and a test that reads the palette cannot see
+   that. This one reads the page.
+
+   Every string is painted transparent, the viewport is photographed, and the
+   pixels where the text was are measured against the colour that text is
+   really painted in. What comes back is the actual background behind every
+   word, scrim and aura and card tint included.
+
+   The decode happens on about:blank rather than on the site, because the
+   screenshot arrives as a data: URL and this site's own policy is
+   img-src 'self'. That is the policy working, not a problem with it. */
+
+/** The elements a reader reads. Asked for by tag rather than by role, because
+    the question is the same for a heading and for a list item - what colour is
+    behind this ink - and it has to be asked of every string on the page rather
+    than of the named ones. */
+const SCRIM_PROBE = 'main h2, main h3, main p, main li, main a, main strong, main span';
+
+/** WCAG's bar for the size the text actually is: 3:1 once it is large, 4.5:1
+    otherwise. Large is 24px at any weight, or 18.66px once bold. */
+const contrastFloor = ({ px, bold }) => (px >= 24 || (px >= 18.66 && bold) ? 3 : 4.5);
+
+/** Where the aura is parked for a given pass. The three blobs run on 19, 23
+    and 27 second loops, so these offsets land them in a different arrangement
+    every time rather than sampling one instant of a moving layer. */
+const DRIFT_PHASES = [0, 5, 11, 17];
+
+/** A page on about:blank whose only job is to decode screenshots and read
+    pixels out of them. */
+async function pixelDecoder() {
+  const context = await browser.newContext();
+  const page = await context.newPage();
+  await page.goto('about:blank');
+  return { page, close: () => context.close() };
+}
+
+/** Walks a page from top to bottom a screen at a time and reports every text
+    element whose contrast against its own background falls under the bar. */
+async function scrimFailures(page, decoder) {
+  /* The hero's entrance runs for 0.8s behind a delay of up to 0.36s, and it
+     animates opacity. Measuring through it reads a half-faded control against
+     the page and calls that a contrast failure, which photographs the page
+     arriving rather than the page.
+
+     Only the clock-driven animations are waited on. A scroll-driven one is
+     finished when the reader has scrolled past it and not before, so awaiting
+     those hangs until the timeout: they are excluded by their timeline rather
+     than by their duration. They need no wait anyway, because at a fixed
+     scroll position they resolve to the same frame every time. */
+  await page.evaluate(
+    () =>
+      new Promise((resolve) => {
+        const onClock = document
+          .getAnimations()
+          .filter((animation) => animation.timeline === document.timeline)
+          .filter((animation) => animation.effect?.getTiming().iterations !== Infinity);
+        Promise.allSettled(onClock.map((animation) => animation.finished)).then(resolve);
+      }),
+  );
+
+  const viewport = page.viewportSize();
+  const documentHeight = await page.evaluate(() => document.documentElement.scrollHeight);
+  const step = Math.round(viewport.height * 0.85);
+  const failures = [];
+
+  for (let pass = 0, top = 0; top < documentHeight; pass++, top += step) {
+    await page.evaluate((y) => window.scrollTo(0, y), top);
+    /* Style attributes rather than an injected stylesheet, throughout this
+       function. The site's policy is style-src 'self', so a stylesheet added
+       from here is blocked - correctly, and tests/policy.test.mjs is what
+       keeps it that way. Attributes are the one loosening the policy makes,
+       for ticket 09's staggered entrance, and they are enough here. */
+    await page.evaluate((phase) => {
+      for (const blob of document.querySelectorAll('.blob')) {
+        blob.style.animationDelay = `-${phase}s`;
+      }
+      /* The reveals come off entirely rather than being paused, because what
+         is being measured is the page a person reads and a reveal is a thing
+         that happens on the way to it. Frozen half way through, a reveal is
+         a section at 40% opacity washed out toward the page colour, and the
+         measurement then reports a contrast failure about a frame nobody
+         reads. Removing the animation leaves each element in its own settled
+         state, which is what `.reveal` styles as: the motion only ever takes
+         it away and gives it back.
+
+         It also fixes the rectangles. A scrubbed reveal moves its element by
+         up to 1.5rem, so measuring on one frame and photographing on the next
+         samples a point that has since slid onto the next paragraph. */
+      for (const node of document.querySelectorAll('main, main *')) {
+        node.style.animationName = 'none';
+      }
+    }, DRIFT_PHASES[pass % DRIFT_PHASES.length]);
+    /* Two frames: one for the pause and the parked drift to take effect, one
+       for the compositor to hand back a stable page to measure. */
+    await page.evaluate(
+      () => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))),
+    );
+
+    /* The measurements are taken before the ink is hidden, so each probe
+       carries the colour the text is really painted in. */
+    const probes = await page.evaluate((selector) => {
+      const found = [];
+      /* The header is sticky, so the top band of the viewport belongs to it
+         and not to whatever has scrolled underneath. Clamping a probe to the
+         viewport without clamping it to this instead samples the header's own
+         text, which is ink on ink and reports 1.00 for a paragraph that is
+         perfectly readable where a reader actually reads it. */
+      const header = document.querySelector('header').getBoundingClientRect().bottom;
+      for (const node of document.querySelectorAll(selector)) {
+        /* Only elements holding text of their own. A <section> wrapping three
+           paragraphs would otherwise be measured across its whole area,
+           including the gaps between them. */
+        const ownText = [...node.childNodes].some(
+          (child) => child.nodeType === 3 && child.textContent.trim(),
+        );
+        if (!ownText) continue;
+
+        const rect = node.getBoundingClientRect();
+        if (rect.width < 8 || rect.height < 8) continue;
+        if (rect.bottom <= header || rect.top >= window.innerHeight) continue;
+
+        const style = getComputedStyle(node);
+        /* The two gradient-clipped headings paint no ink of their own. The
+           token test above is what covers those, against the 3:1 bar their
+           display size earns them. */
+        if (/,\s*0\)$/.test(style.color)) continue;
+
+        /* An element's own borders are not the background behind its text,
+           and several here are a flag colour: `.more` hangs from a 2px pink
+           rule and the support warning stands on a 3px one. Sampling those
+           measures ink against a border and reports 2.09 for a link that
+           reads perfectly. */
+        const edge = (side) => Number.parseFloat(style[`border${side}Width`]) + 1;
+        const x = Math.max(0, rect.x) + edge('Left');
+        const y = Math.max(header, rect.y) + edge('Top');
+        const box = {
+          x,
+          y,
+          w: Math.min(rect.right, window.innerWidth) - x - edge('Right'),
+          h: Math.min(rect.bottom, window.innerHeight) - y - edge('Bottom'),
+        };
+        /* What is left after the header band and the borders have been taken
+           off has to still be a box. An element sliding under the sticky
+           header leaves a sliver, and a sliver of negative height samples
+           points above its own top edge, which is how a link came to be
+           measured against its own underline. */
+        if (box.w < 8 || box.h < 8) continue;
+
+        found.push({
+          color: style.color,
+          px: Number.parseFloat(style.fontSize),
+          bold: Number.parseInt(style.fontWeight, 10) >= 700,
+          what: `${node.tagName.toLowerCase()}: ${node.textContent.trim().slice(0, 40)}`,
+          rect: box,
+        });
+      }
+      return found;
+    }, SCRIM_PROBE);
+
+    if (probes.length === 0) continue;
+
+    /* The ink comes off so the camera sees only what is behind it, and goes
+       back on straight afterwards so the next pass can read the colours
+       again. Nothing on this site carries an inline colour of its own, so
+       clearing the property restores the stylesheet's. */
+    const paintText = (visible) =>
+      page.evaluate((show) => {
+        for (const node of document.querySelectorAll('main *')) {
+          node.style.color = show ? '' : 'transparent';
+          node.style.webkitTextFillColor = show ? '' : 'transparent';
+        }
+      }, visible);
+
+    await paintText(false);
+    /* A style change needs a frame before it is on screen, and the screenshot
+       does not wait for one. Without this the camera catches the page as it
+       was, every sample lands on a letter, and the whole measurement quietly
+       reports the ink's contrast against itself. The check below is what
+       stops that failing silently if it ever comes back. */
+    await page.evaluate(
+      () => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))),
+    );
+    const stillPainted = await page.evaluate(() =>
+      [...document.querySelectorAll('main *')].filter(
+        (node) => !/,\s*0\)$/.test(getComputedStyle(node).color),
+      ).length,
+    );
+    assert.equal(stillPainted, 0, 'the ink did not come off before the screenshot');
+
+    const shot = (await page.screenshot()).toString('base64');
+    await paintText(true);
+
+    const measured = await decoder.evaluate(async ({ shot, probes }) => {
+      const image = new Image();
+      image.src = `data:image/png;base64,${shot}`;
+      await image.decode();
+
+      const canvas = document.createElement('canvas');
+      canvas.width = image.naturalWidth;
+      canvas.height = image.naturalHeight;
+      const context = canvas.getContext('2d', { willReadFrequently: true });
+      context.drawImage(image, 0, 0);
+
+      const channel = (n) => {
+        const v = n / 255;
+        return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
+      };
+      const luminance = ([r, g, b]) => 0.2126 * channel(r) + 0.7152 * channel(g) + 0.0722 * channel(b);
+      const ratio = (front, back) => {
+        const [bright, dark] = [luminance(front), luminance(back)].sort((a, b) => b - a);
+        return (bright + 0.05) / (dark + 0.05);
+      };
+
+      return probes.map((probe) => {
+        const ink = probe.color.match(/\d+(?:\.\d+)?/g).map(Number).slice(0, 3);
+        /* A grid across the element rather than one point in the middle: the
+           aura is a gradient, so the worst pixel under a wide paragraph is at
+           one of its ends.
+
+           It keeps well inside the box, which is not slack but accuracy. The
+           question is what colour is behind the words, and an element's
+           extreme edge is not behind its words: the corner of a 999px pill is
+           outside the pill, the last row of `.more` is its pink underline and
+           the first column of the support warning is its pink rule. Sampling
+           those measures ink against ink and reports 1.02 for a control that
+           the token ratios above already cover properly. */
+        let worst = { ratio: Infinity, background: null };
+        for (let i = 0; i <= 4; i++) {
+          for (let j = 0; j <= 2; j++) {
+            const x = Math.round(probe.rect.x + probe.rect.w * (0.1 + 0.2 * i));
+            const y = Math.round(probe.rect.y + probe.rect.h * (0.3 + 0.2 * j));
+            if (x < 0 || y < 0 || x >= canvas.width || y >= canvas.height) continue;
+            const [r, g, b] = context.getImageData(x, y, 1, 1).data;
+            const found = ratio(ink, [r, g, b]);
+            if (found < worst.ratio) worst = { ratio: found, background: `rgb(${r}, ${g}, ${b})` };
+          }
+        }
+        return { ...probe, ...worst };
+      });
+    }, { shot, probes });
+
+    for (const probe of measured) {
+      const floor = contrastFloor(probe);
+      if (probe.ratio < floor) {
+        failures.push(
+          `${probe.what} is ${probe.color} on ${probe.background}: ${probe.ratio.toFixed(2)}, needs ${floor}`,
+        );
+      }
+    }
+  }
+
+  return failures;
+}
+
+/* Both themes, both text sizes, both pages. The aura runs on the privacy page
+   too, at half strength, so the page a person opens while deciding whether to
+   trust the app is measured the same way as the one selling it to them. */
+for (const scheme of ['light', 'dark']) {
+  for (const textSize of ['100%', '200%']) {
+    test(`${scheme} at ${textSize}: the scrim holds text contrast over the whole aura`, async () => {
+      const { context, page } = await visitor({ colorScheme: scheme });
+      const decoder = await pixelDecoder();
+      try {
+        await page.setViewportSize({ width: 1280, height: 900 });
+        for (const suffix of Object.values(PAGE_PATHS)) {
+          await page.goto(`${base}/en/${suffix}`);
+          assert.equal(await themeNow(page), scheme, `asked for ${scheme} and got the other palette`);
+          await page.evaluate((size) => {
+            document.documentElement.style.fontSize = size;
+          }, textSize);
+
+          const failures = await scrimFailures(page, decoder.page);
+          assert.deepEqual(failures, [], `/en/${suffix} at ${textSize} in ${scheme}`);
+        }
+      } finally {
+        await decoder.close();
+        await context.close();
+      }
+    });
+  }
+}
+
 for (const { name, run } of tests) {
   try {
     await run();

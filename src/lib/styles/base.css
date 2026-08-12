@@ -44,8 +44,25 @@
   --blob-blue: rgba(91, 206, 250, 0.38);
   --blob-pink: rgba(245, 169, 184, 0.42);
   --blob-white: rgba(255, 255, 255, 0.9);
+  /* The same two colours at the strength a surface carrying text can afford,
+     as opposed to --blob-*, which is what the aura is painted in and never has
+     a word on top of it. In light they are the same values, because a tint
+     that lightens a white card cannot hurt dark text; in dark a tint lifts the
+     surface toward the text and the pair below is deliberately weaker. Ticket
+     17's pixel test is what found this: --muted on the dark pink card was
+     3.34, and had been since ticket 09 shipped the grid. */
+  --tint-blue: rgba(91, 206, 250, 0.38);
+  --tint-pink: rgba(245, 169, 184, 0.42);
   --glow: rgba(193, 75, 120, 0.18);
   --header: rgba(247, 247, 251, 0.78);
+  /* The veil between the aura and a paragraph (ticket 17). The aura is a
+     page-wide fixed layer now, so text no longer sits on --page but on --page
+     plus whatever has drifted behind it; this is --page again at an alpha that
+     leaves the glow readable as atmosphere and leaves the contrast ratios
+     where the palette put them. Measured rather than guessed: the scrim test
+     in tests/site.test.mjs samples the rendered pixels behind every text block
+     at four points of the drift and reads the real ratio back. */
+  --scrim: rgba(247, 247, 251, 0.86);
   /* Text sitting on the vivid gradient (.cta, ::selection). The same
      near-black in both themes, because the gradient underneath it is too. */
   --ink-on-accent: #0c0f16;
@@ -68,8 +85,11 @@
     --blob-blue: rgba(91, 206, 250, 0.42);
     --blob-pink: rgba(245, 169, 184, 0.42);
     --blob-white: rgba(242, 243, 247, 0.2);
+    --tint-blue: rgba(91, 206, 250, 0.16);
+    --tint-pink: rgba(245, 169, 184, 0.16);
     --glow: rgba(245, 169, 184, 0.22);
     --header: rgba(12, 15, 22, 0.72);
+    --scrim: rgba(12, 15, 22, 0.86);
     color-scheme: dark;
   }
 }
@@ -91,8 +111,11 @@
   --blob-blue: rgba(91, 206, 250, 0.42);
   --blob-pink: rgba(245, 169, 184, 0.42);
   --blob-white: rgba(242, 243, 247, 0.2);
+  --tint-blue: rgba(91, 206, 250, 0.16);
+  --tint-pink: rgba(245, 169, 184, 0.16);
   --glow: rgba(245, 169, 184, 0.22);
   --header: rgba(12, 15, 22, 0.72);
+  --scrim: rgba(12, 15, 22, 0.86);
   color-scheme: dark;
 }
 
@@ -109,9 +132,10 @@ body {
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   /* No overflow-x: clip here, deliberately. Wide compositions clip or scroll
-     inside their own containers (the hero clips its blobs, the tour strip
-     scrolls itself), and a clip at the body would also hide a layout broken
-     by Polish text lengths from the test that checks for exactly that. */
+     inside their own containers (the aura layer clips its blobs, the tour
+     strip scrolls itself), and a clip at the body would also hide a layout
+     broken by Polish text lengths from the test that checks for exactly
+     that. */
 }
 
 ::selection {
@@ -230,7 +254,10 @@ a {
   font-weight: 600;
   font-size: 1.0625rem;
   letter-spacing: -0.01em;
-  padding: 0.85rem 2.1rem;
+  /* The side padding gives way before the label does. At 200% text on a 390px
+     screen a fixed 2.1rem is 67px of air either side of a string that is
+     already 220px, and the pill stops fitting the phone. */
+  padding: 0.85rem min(2.1rem, 8vw);
   text-decoration: none;
   box-shadow: 0 8px 32px var(--glow);
   transition:
@@ -249,6 +276,40 @@ a {
 .status {
   color: var(--muted);
   font-size: 0.875rem;
+}
+
+/* ---- The scrim --------------------------------------------------------- */
+
+/* A veil of --page between the page-wide aura and a block of text (ticket
+   17). Blurred rather than bounded, so it reads as the glow thinning out
+   behind the words rather than as one more box on a page that had too many.
+   The aura keeps its full strength in the gutters and in the full-bleed tour,
+   which is where it is supposed to be seen.
+
+   `isolation` is load-bearing. The pseudo-element sits at -1 so that it paints
+   behind its own parent's text, and without a stacking context here that -1
+   would land in the root's negative layer beside the aura rather than above
+   it, which paints the veil under the thing it is meant to veil. */
+.scrim {
+  position: relative;
+  isolation: isolate;
+}
+
+/* Bleeds up and down but never sideways. An absolutely positioned box with a
+   negative inset contributes to the scrollable overflow of its containing
+   block, so a horizontal bleed here is a phone scrolling sideways - which is
+   what the 390px tests caught the first time this was written. The blur is
+   what softens the left and right edges instead, and a filter's ink overflow
+   is not scrollable overflow, so it costs nothing. */
+.scrim::before {
+  content: '';
+  position: absolute;
+  inset: -1.5rem 0;
+  z-index: -1;
+  border-radius: 2rem;
+  background: var(--scrim);
+  filter: blur(24px);
+  pointer-events: none;
 }
 
 /* The theme control needs scripting to do anything, so it is only shown once
