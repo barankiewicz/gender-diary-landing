@@ -559,6 +559,13 @@ for (const locale of ['en', 'pl']) {
     const { context, page } = await visitor({ locale: locale === 'pl' ? 'pl-PL' : 'en-US' });
     try {
       await page.goto(`${base}/${locale}/`);
+      /* goto resolves on the load event, but the app hydrates through dynamic
+         imports that finish after it, and until they do the theme buttons are
+         on screen without their behaviour - app.html reveals them by setting
+         data-js, which happens long before the component is listening. Waiting
+         for the network to fall quiet waits for those imports. Without this the
+         Space below lands on an inert button roughly one run in seven. */
+      await page.waitForLoadState('networkidle');
 
       const oppositeLanguage = locale === 'en' ? 'Polski' : 'English';
       const expectedPath = locale === 'en' ? '/pl/' : '/en/';
