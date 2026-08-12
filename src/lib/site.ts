@@ -33,12 +33,42 @@ export function isLocale(value: unknown): value is Locale {
   return LOCALES.includes(value as Locale);
 }
 
+/** The pages that exist in both languages. Each one is a location a person can
+    be sent to and a search engine can index, which is why the language control
+    switches page-for-page rather than dropping a reader who is halfway through
+    the privacy page back onto the landing page in their other language.
+
+    A union rather than a `LOCALES`-style array, because nothing iterates the
+    pages: routes are files on disk and the sitemap is generated from the built
+    directory. */
+export type Page = 'landing' | 'privacy';
+
 /** Trailing slash, so the managed host serves `<locale>/index.html` and the URL
     a person copies is the one the alternates and the canonical link name.
 
     Root-relative rather than run through `resolve()` from `$app/paths`: that
     exists to prefix a configured base path, and this site is served from the
     root of an origin it has to itself. */
-export function pathFor(locale: Locale): string {
-  return `/${locale}/`;
+export function pathFor(locale: Locale, page: Page = 'landing'): string {
+  return page === 'landing' ? `/${locale}/` : `/${locale}/${page}/`;
 }
+
+/** What `x-default` names for a page.
+
+    The landing page has `/`, which asks the browser what it reads and sends it
+    on. No other page has an equivalent, and building one would mean a second
+    copy of that redirect for every page the site grows. `x-default` is the
+    version served when none of the alternates match, so for those pages it is
+    the fallback locale's, which is what a visitor asking for neither language
+    would get anyway. */
+export function defaultPathFor(page: Page): string {
+  return page === 'landing' ? '/' : pathFor(FALLBACK_LOCALE, page);
+}
+
+/** A paragraph as the catalogue stores it. A plain string is a paragraph with
+    nothing marked in it. The pair is a paragraph that opens with a bold lead,
+    and `rest` carries its own separator verbatim: a space after `Entries.`, a
+    comma after `If you forget the PIN`, a colon after `Osiem palet`. Splitting
+    the separator out instead would put the renderer in charge of punctuation
+    the copy already decided. */
+export type Paragraph = string | { lead: string; rest: string };
