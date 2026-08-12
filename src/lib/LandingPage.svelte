@@ -23,7 +23,7 @@
       <div class="headline-block enter" style:--enter={1}>
         <p class="headline">{m.hero.headline}</p>
 
-        <!-- The flag as a line rather than as stripes: one hand-drawn curve
+        <!-- The flag as a line rather than as stripes: one straight rule
              stroked blue to white to pink, drawing itself once the headline has
              landed. Alicja asked for this in Rive (2026-08-12); it is SVG
              because Rive would be 150-200kb of runtime and WASM against a
@@ -51,7 +51,7 @@
           </defs>
           <path
             pathLength="1"
-            d="M4 10 C 78 3, 148 12, 226 6 S 344 3, 396 9"
+            d="M2 7 L 398 7"
             fill="none"
             stroke="url(#flag-stroke-gradient)"
             stroke-width="3"
