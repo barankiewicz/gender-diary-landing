@@ -65,6 +65,106 @@ export function defaultPathFor(page: Page): string {
   return page === 'landing' ? '/' : pathFor(FALLBACK_LOCALE, page);
 }
 
+/** The picture a link preview shows, one file for every page and both
+    languages, served from this origin like every other asset here.
+
+    It carries the wordmark over the site's own aurora, and no words beyond
+    the name. A preview is the one surface somebody did not choose to look at:
+    it turns up in a group chat, on a timeline, next to a message in a
+    notification, and a card that spelled out what the app is for would say it
+    to whoever is looking at that screen (spec story 37). What the app is goes
+    in `og:description`, which is the part a person who shares the link is
+    choosing to send. That is spec story 31 partly traded for story 37, and it
+    is written up on the ticket rather than settled quietly here.
+
+    `scripts/social-card.mjs` renders the file and the PNG is committed, so a
+    build needs no browser and the picture cannot change without somebody
+    looking at it. The dimensions below are the ones the file actually has,
+    and a test reads them back out of it. */
+export const SOCIAL_CARD = { path: '/social-card.png', width: 1200, height: 630 } as const;
+
+/** `og:locale` wants a language and a region, unlike `hreflang`, which is
+    happy with a language. British English, because that is what the copy is
+    written in ("colour", "Coloured by mood"). */
+const OG_LOCALES: Record<Locale, string> = { en: 'en_GB', pl: 'pl_PL' };
+
+/** The other language, for `og:locale:alternate`. A map rather than a search
+    through `LOCALES`, which would need a fallback for a case two languages
+    cannot produce. A third language is then a type error here, which is the
+    right place to notice that the tag can carry more than one value. */
+const OTHER_LOCALE: Record<Locale, Locale> = { en: 'pl', pl: 'en' };
+
+/** The Open Graph tags a page's head carries, as property and content in the
+    order they are written.
+
+    The URL is passed in rather than derived, because the language gateway at
+    `/` needs a card too and it is not one of the pages `pathFor` knows: it is
+    the URL somebody copies out of the address bar before they have picked a
+    language, so it is the one most likely to be pasted somewhere. */
+export function socialTags(preview: {
+  locale: Locale;
+  url: string;
+  title: string;
+  description: string;
+}): Record<string, string> {
+  return {
+    'og:type': 'website',
+    'og:site_name': messages[preview.locale].pageTitle,
+    'og:title': preview.title,
+    'og:description': preview.description,
+    'og:url': preview.url,
+    'og:locale': OG_LOCALES[preview.locale],
+    'og:locale:alternate': OG_LOCALES[OTHER_LOCALE[preview.locale]],
+    'og:image': SITE_ORIGIN + SOCIAL_CARD.path,
+    'og:image:width': String(SOCIAL_CARD.width),
+    'og:image:height': String(SOCIAL_CARD.height),
+    'og:image:alt': messages[preview.locale].meta.cardAlt,
+  };
+}
+
+/** What the landing page says about the app, as the JSON-LD block that page's
+    head carries.
+
+    Every property is a claim the page makes in words a visitor can read,
+    which is the whole rule for this block. There are five of them, and what
+    is missing is the point. The vocabulary offers a rating, an offer, a
+    review count and an aggregate of the three, and this project has none of
+    them, so a listing that showed stars would be an invention in the format
+    most likely to be believed. Refusing the offer costs the
+    software-application rich result, which needs a price.
+
+    `WebApplication` rather than the wider `SoftwareApplication`, because the
+    page says the app runs in a browser and says there is no Android app yet.
+    For the same reason there is no `operatingSystem`: "any" would be a claim
+    about a platform the site is careful not to mention. There is no
+    `applicationCategory` either, recommended though it is, because the page
+    never puts the app in a category and this block says only what the page
+    says. `url` is the Journal, since that is where the application is; this
+    page is where it is described. Nobody is named as an author or a
+    publisher, which is the site's rule about its own author rather than an
+    oversight. No screenshot, until ticket 15 captures the tour from invented
+    data.
+
+    It reaches the page through `{@html}` because Svelte compiles a `<script>`
+    written in markup as the component's own script, which is why the language
+    gateway builds its redirect as a string too. The escape is what makes that
+    safe: nothing here comes from a visitor, but a `<` reaching the document
+    as itself is how a string ends a script block early, so none does. The
+    indentation stays, because this site's argument is that a reader can check
+    it, and somebody checking reads this in view-source. */
+export function structuredDataScript(locale: Locale): string {
+  const data = {
+    '@context': 'https://schema.org',
+    '@type': 'WebApplication',
+    name: messages[locale].pageTitle,
+    url: JOURNAL_URL,
+    description: messages[locale].meta.landing.description,
+    inLanguage: [...LOCALES],
+  };
+  const json = JSON.stringify(data, null, 2).replace(/</g, '\\u003c');
+  return `<script type="application/ld+json">${json}</script>`;
+}
+
 /** A paragraph as the catalogue stores it. A plain string is a paragraph with
     nothing marked in it. The pair is a paragraph that opens with a bold lead,
     and `rest` carries its own separator verbatim: a space after `Entries.`, a

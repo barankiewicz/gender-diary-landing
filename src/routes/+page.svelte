@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { LOCALES, SITE_ORIGIN, messages, pathFor } from '$lib/site';
+  import { FALLBACK_LOCALE, LOCALES, SITE_ORIGIN, messages, pathFor, socialTags } from '$lib/site';
 
   /* Sends a visitor to the language they last read here, otherwise to the one
      their browser asks for, otherwise to English. It runs in the head of a
@@ -29,15 +29,35 @@
       location.replace('/en/');
     }
   <\/script>`;
+
+  /* This page has no language of its own: it reads the visitor's and leaves
+     again. What it does have is the URL people copy, because it is the only
+     one without a language in it, so it is the URL most likely to be pasted
+     into a chat and the one whose preview gets looked at. The card is the
+     fallback locale's, which is also the page a visitor asking for neither
+     language is about to be sent to. No structured data: this page shows a
+     name and two language links, and there is nothing here to describe. */
+  const description = messages[FALLBACK_LOCALE].meta.landing.description;
+  const gateway = socialTags({
+    locale: FALLBACK_LOCALE,
+    url: `${SITE_ORIGIN}/`,
+    title: messages[FALLBACK_LOCALE].pageTitle,
+    description,
+  });
 </script>
 
 <svelte:head>
   <title>Gender Diary</title>
+  <meta name="description" content={description} />
   <link rel="canonical" href={`${SITE_ORIGIN}/`} />
   {#each LOCALES as locale (locale)}
     <link rel="alternate" hreflang={locale} href={SITE_ORIGIN + pathFor(locale)} />
   {/each}
   <link rel="alternate" hreflang="x-default" href={`${SITE_ORIGIN}/`} />
+  {#each Object.entries(gateway) as [property, content] (property)}
+    <meta {property} {content} />
+  {/each}
+  <meta name="twitter:card" content="summary_large_image" />
   {@html redirect}
 </svelte:head>
 
