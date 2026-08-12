@@ -1,5 +1,5 @@
-import en from '../../messages/en.json';
-import pl from '../../messages/pl.json';
+import en from '../../messages/en.json' with { type: 'json' };
+import pl from '../../messages/pl.json' with { type: 'json' };
 
 /** Placeholder until launch configuration is approved (spec, further notes). */
 export const SITE_ORIGIN = 'https://genderdiary.barankiewicz.dev';
