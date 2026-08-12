@@ -3,6 +3,16 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <!-- The one font on the site, self-hosted (ticket 09: no remote asset).
+         Preloaded because every visible string is set in it, so the swap it
+         avoids would be the whole page. -->
+    <link
+      rel="preload"
+      href="/fonts/space-grotesk.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
     <script>
       /* Stamps a stored theme choice before first paint. Someone who chose
          dark chose it for a reason, and repainting from light after hydration
