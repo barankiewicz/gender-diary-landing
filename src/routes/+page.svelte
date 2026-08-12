@@ -8,7 +8,9 @@
 
      Dependency-free and inline for that reason, which means the storage key
      and the locale list are written out a second time here. src/lib/site.ts
-     owns both; they have to change together. Without scripting this stays a
+     owns both; they have to change together. It reaches the page through
+     `{@html}`, which is safe here and only here: the string below is a
+     literal with nothing interpolated into it. Without scripting this stays a
      page with one link per language, which is why those links are ordinary
      markup rather than a noscript block. */
   const redirect = `<script>
@@ -31,6 +33,7 @@
 
 <svelte:head>
   <title>Gender Diary</title>
+  <link rel="canonical" href={`${SITE_ORIGIN}/`} />
   {#each LOCALES as locale (locale)}
     <link rel="alternate" hreflang={locale} href={SITE_ORIGIN + pathFor(locale)} />
   {/each}
@@ -41,7 +44,10 @@
 <div class="layout">
   <main id="content">
     <h1>Gender Diary</h1>
-    <nav aria-label="Language">
+    <!-- No label on the nav: the only words on this page are a name and the
+         two language names, each tagged with its own lang, so there is nothing
+         here for a person to read in the wrong language. -->
+    <nav>
       <ul>
         {#each LOCALES as locale (locale)}
           <li>

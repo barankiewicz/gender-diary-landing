@@ -10,28 +10,24 @@ export type Locale = (typeof LOCALES)[number];
 /** The locale a visitor gets when their browser asks for neither of ours. */
 export const FALLBACK_LOCALE: Locale = 'en';
 
-/** Where the language choice is remembered. This origin only: nothing here is
+/** Where a language choice is remembered. This origin only: nothing here is
     readable from the Journal, and nothing here reads Journal state. */
 export const LANGUAGE_KEY = 'gd-landing-language';
 
-export const messages: Record<Locale, typeof en> = { en, pl: pl as typeof en };
+/* Not annotated, so that the two files having different keys is a type error
+   rather than a missing string on the Polish page. */
+export const messages = { en, pl };
 
 export function isLocale(value: unknown): value is Locale {
   return LOCALES.includes(value as Locale);
 }
 
-/** Trailing slash so lh.pl serves `<locale>/index.html` and the URL a person
-    copies is the one the alternates and the canonical name. */
+/** Trailing slash, so the managed host serves `<locale>/index.html` and the URL
+    a person copies is the one the alternates and the canonical link name.
+
+    Root-relative rather than run through `resolve()` from `$app/paths`: that
+    exists to prefix a configured base path, and this site is served from the
+    root of an origin it has to itself. */
 export function pathFor(locale: Locale): string {
   return `/${locale}/`;
-}
-
-/** First supported locale among the visitor's preferences, matching on the
-    language subtag so `pl-PL` and `en-GB` count. */
-export function pickLocale(preferences: readonly string[]): Locale {
-  for (const preference of preferences) {
-    const subtag = preference.toLowerCase().split('-')[0];
-    if (isLocale(subtag)) return subtag;
-  }
-  return FALLBACK_LOCALE;
 }

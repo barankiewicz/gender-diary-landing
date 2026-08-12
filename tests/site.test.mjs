@@ -1,12 +1,17 @@
 /* Black-box tests for ticket 02, driven against the built site served as
    plain files. They assert what a visitor gets - the URL they land on, the
-   language of the document, the theme at the first frame, what survives a
+   language of the document, the theme the page is painted in, what survives a
    reload - and never reach into component internals or class names.
 
    Run with `npm test`, which builds first. */
 import assert from 'node:assert/strict';
 import { fileURLToPath } from 'node:url';
 import { createReporter, launchChromium, serveBuild } from './browser-harness.mjs';
+
+/* The origin the built pages name in their canonical and alternate links. It
+   is provisional (spec, further notes), and changing it should be a deliberate
+   edit here as well as in src/lib/site.ts. */
+const SITE_ORIGIN = 'https://genderdiary.barankiewicz.dev';
 
 const buildDirectory = fileURLToPath(new URL('../build', import.meta.url));
 const { server, base } = await serveBuild(buildDirectory);
@@ -21,21 +26,16 @@ const test = (name, run) => tests.push({ name, run });
 async function visitor({ locale = 'en-US', colorScheme = 'light', javaScriptEnabled = true }) {
   const context = await browser.newContext({ locale, colorScheme, javaScriptEnabled });
 
-  /* Watches the theme in every document from before its first script runs:
-     what it was at the first frame, and every change to it. A theme applied
-     after hydration shows up here as the wrong value at the first frame and as
-     a change recorded after it - which together are the flash a person would
-     have seen. The observer is attached to `document` rather than to
-     `documentElement`, which the parser may not have created yet. */
+  /* Records the theme the document was painted in at its first frame. A theme
+     applied after hydration would be recorded here as the wrong one, which is
+     the flash a person would have seen. */
   await context.addInitScript(() => {
-    Object.assign(window, { themeChanges: [], changesBeforeFirstFrame: -1 });
-    new MutationObserver((records) => {
-      for (const _ of records) window.themeChanges.push(document.documentElement.dataset.theme);
-    }).observe(document, { subtree: true, attributes: true, attributeFilter: ['data-theme'] });
-
     requestAnimationFrame(() => {
-      window.changesBeforeFirstFrame = window.themeChanges.length;
-      window.firstFrameTheme = document.documentElement.dataset.theme;
+      Object.assign(window, {
+        firstFrameTheme: getComputedStyle(document.documentElement)
+          .getPropertyValue('--theme')
+          .trim(),
+      });
     });
   });
 
@@ -45,18 +45,21 @@ async function visitor({ locale = 'en-US', colorScheme = 'light', javaScriptEnab
   return { context, page, requests };
 }
 
-const themeNow = (page) => page.evaluate(() => document.documentElement.dataset.theme);
-const documentLanguage = (page) => page.evaluate(() => document.documentElement.lang);
+/** What the visitor is looking at: the theme the cascade settled on, whichever
+    of the media query or a stored choice decided it. */
+const themeNow = (page) =>
+  page.evaluate(() =>
+    getComputedStyle(document.documentElement).getPropertyValue('--theme').trim(),
+  );
 
-/** The theme at the first frame, and whether the theme changed after it. The
-    wait matters: `load` can fire before the first frame has been produced. */
-async function firstPaint(page) {
-  await page.waitForFunction(() => window.changesBeforeFirstFrame >= 0);
-  return page.evaluate(() => ({
-    theme: window.firstFrameTheme,
-    changedAfterFirstFrame: window.themeChanges.slice(window.changesBeforeFirstFrame),
-  }));
+/** The theme at the first frame. The wait matters: `load` can fire before the
+    first frame has been produced. */
+async function firstFrameTheme(page) {
+  await page.waitForFunction(() => window.firstFrameTheme !== undefined);
+  return page.evaluate(() => window.firstFrameTheme);
 }
+
+const documentLanguage = (page) => page.evaluate(() => document.documentElement.lang);
 
 // Language: where a first visit lands
 
@@ -93,10 +96,16 @@ test('each language is a stable location that serves itself', async () => {
 });
 
 test('each language points at the other one and at the gateway', async () => {
-  const { context, page } = await visitor({});
+  /* Scripting off, so the gateway can be read rather than redirecting out from
+     under the assertions. These are static tags either way. */
+  const { context, page } = await visitor({ javaScriptEnabled: false });
   try {
-    for (const locale of ['en', 'pl']) {
-      await page.goto(`${base}/${locale}/`);
+    for (const [path, canonical] of [
+      ['/en/', `${SITE_ORIGIN}/en/`],
+      ['/pl/', `${SITE_ORIGIN}/pl/`],
+      ['/', `${SITE_ORIGIN}/`],
+    ]) {
+      await page.goto(base + path);
       const alternates = await page.evaluate(() =>
         Object.fromEntries(
           [...document.querySelectorAll('link[rel=alternate][hreflang]')].map((link) => [
@@ -105,13 +114,12 @@ test('each language points at the other one and at the gateway', async () => {
           ]),
         ),
       );
-      assert.deepEqual(Object.keys(alternates).sort(), ['en', 'pl', 'x-default']);
-      assert.match(alternates.en, /\/en\/$/);
-      assert.match(alternates.pl, /\/pl\/$/);
-      assert.match(alternates['x-default'], /\/$/);
-
-      const canonical = await page.getAttribute('link[rel=canonical]', 'href');
-      assert.match(canonical, new RegExp(`/${locale}/$`));
+      assert.deepEqual(alternates, {
+        en: `${SITE_ORIGIN}/en/`,
+        pl: `${SITE_ORIGIN}/pl/`,
+        'x-default': `${SITE_ORIGIN}/`,
+      });
+      assert.equal(await page.getAttribute('link[rel=canonical]', 'href'), canonical);
     }
   } finally {
     await context.close();
@@ -136,6 +144,23 @@ test('the language control switches language and is remembered', async () => {
   }
 });
 
+test('reading a link to the other language is not a choice to switch', async () => {
+  const { context, page } = await visitor({ locale: 'en-US' });
+  try {
+    await page.goto(`${base}/en/`);
+    await page.getByRole('link', { name: 'Polski' }).click();
+    await page.waitForURL(`${base}/pl/`);
+
+    // Somebody sends this person an English link. Reading it must not throw
+    // away the Polish they chose.
+    await page.goto(`${base}/en/`);
+    await page.goto(`${base}/`);
+    await page.waitForURL(`${base}/pl/`);
+  } finally {
+    await context.close();
+  }
+});
+
 // Theme: where a first visit starts, and the control that overrides it
 
 for (const scheme of ['dark', 'light']) {
@@ -143,7 +168,7 @@ for (const scheme of ['dark', 'light']) {
     const { context, page } = await visitor({ colorScheme: scheme });
     try {
       await page.goto(`${base}/en/`);
-      assert.equal((await firstPaint(page)).theme, scheme);
+      assert.equal(await firstFrameTheme(page), scheme);
       assert.equal(await themeNow(page), scheme);
     } finally {
       await context.close();
@@ -160,6 +185,11 @@ test('the theme control overrides the system theme and is remembered', async () 
 
     await page.reload();
     assert.equal(await themeNow(page), 'dark');
+    assert.equal(
+      await page.getByRole('button', { name: 'Dark' }).getAttribute('aria-pressed'),
+      'true',
+      'the control showed a different choice than the page was using',
+    );
 
     // And it travels with the person to the other language, same origin.
     await page.goto(`${base}/pl/`);
@@ -176,10 +206,8 @@ test('a reload with a stored dark choice never paints light', async () => {
     await page.getByRole('button', { name: 'Dark' }).click();
 
     await page.reload();
-    const { theme, changedAfterFirstFrame } = await firstPaint(page);
-    assert.equal(theme, 'dark', 'the first frame after a reload was not dark');
-    assert.deepEqual(changedAfterFirstFrame, [], 'the theme was corrected after the page painted');
-    assert.equal(await themeNow(page), 'dark');
+    assert.equal(await firstFrameTheme(page), 'dark', 'the first frame after a reload was light');
+    assert.equal(await themeNow(page), 'dark', 'the theme changed after the page painted');
   } finally {
     await context.close();
   }
@@ -196,7 +224,7 @@ test('choosing system hands the theme back to the system', async () => {
     assert.equal(await themeNow(page), 'dark');
 
     await page.reload();
-    assert.equal((await firstPaint(page)).theme, 'dark', 'the stored choice outlived its removal');
+    assert.equal(await firstFrameTheme(page), 'dark', 'the stored choice outlived its removal');
   } finally {
     await context.close();
   }
@@ -216,8 +244,19 @@ test('the site keeps to its own origin and its own storage', async () => {
     const foreign = requests.filter((url) => !url.startsWith(base));
     assert.deepEqual(foreign, [], 'the page requested something off this origin');
 
+    /* Nothing leaves this origin, so no language or theme state can travel to
+       the Journal: there is nowhere on the page for it to travel to. Ticket 06
+       adds the first outbound links, and this assertion is what will make
+       anyone adding one look at what the link carries. */
+    const outbound = await page.evaluate(() =>
+      [...document.querySelectorAll('a[href]')]
+        .map((link) => link.href)
+        .filter((href) => new URL(href).origin !== location.origin),
+    );
+    assert.deepEqual(outbound, []);
+
     assert.equal(await page.evaluate(() => document.cookie), '', 'the site set a cookie');
-    assert.deepEqual((await context.cookies()).length, 0);
+    assert.equal((await context.cookies()).length, 0);
 
     const keys = await page.evaluate(() => Object.keys(localStorage).sort());
     assert.deepEqual(keys, ['gd-landing-language', 'gd-landing-theme']);
@@ -228,12 +267,17 @@ test('the site keeps to its own origin and its own storage', async () => {
 
 // Without scripting
 
-test('without scripting the page reads and the language links still work', async () => {
-  const { context, page } = await visitor({ locale: 'pl-PL', javaScriptEnabled: false });
+test('without scripting the page reads, in the system theme', async () => {
+  const { context, page } = await visitor({
+    locale: 'pl-PL',
+    colorScheme: 'dark',
+    javaScriptEnabled: false,
+  });
   try {
     await page.goto(`${base}/pl/`);
     assert.equal(await documentLanguage(page), 'pl');
     assert.equal(await page.locator('main section').count(), 3);
+    assert.equal(await themeNow(page), 'dark', 'a dark system theme got a light page');
     assert.equal(
       await page.locator('.theme-control').isVisible(),
       false,

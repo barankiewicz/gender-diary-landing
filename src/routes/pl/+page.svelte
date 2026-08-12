@@ -1,5 +1,5 @@
 <script lang="ts">
-  import Page from '$lib/Page.svelte';
+  import LocalePage from '$lib/LocalePage.svelte';
 </script>
 
-<Page locale="pl" />
+<LocalePage locale="pl" />

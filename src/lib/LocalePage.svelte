@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
   import ThemeControl from '$lib/ThemeControl.svelte';
   import { LANGUAGE_KEY, LOCALES, SITE_ORIGIN, messages, pathFor, type Locale } from '$lib/site';
 
@@ -7,16 +6,17 @@
 
   const m = $derived(messages[locale]);
 
-  /* The language control is a plain link, so switching works without
-     scripting. Remembering it is the part that needs a script: the page a
-     person is reading is the language they get sent to next time. */
-  onMount(() => {
+  /* Only a person choosing a language is remembered, which is why this is on
+     the click and not on the page. Opening somebody else's link to /en/ is not
+     a decision to stop reading Polish, and it must not overwrite one. Without
+     scripting the link still switches language; only the memory is lost. */
+  function remember(chosen: Locale) {
     try {
-      localStorage.setItem(LANGUAGE_KEY, locale);
+      localStorage.setItem(LANGUAGE_KEY, chosen);
     } catch {
-      /* storage unavailable, this visit simply is not remembered */
+      /* storage unavailable, this choice simply is not remembered */
     }
-  });
+  }
 </script>
 
 <svelte:head>
@@ -29,8 +29,6 @@
 </svelte:head>
 
 <div class="layout">
-  <a class="skip-link" href="#content">{m.skipToContent}</a>
-
   <header class="controls">
     <nav class="control" aria-label={m.languageLabel}>
       <span class="control-label">{m.languageLabel}</span>
@@ -46,6 +44,7 @@
           lang={option}
           data-sveltekit-reload
           aria-current={option === locale ? 'page' : undefined}
+          onclick={() => remember(option)}
         >
           {messages[option].languageName}
         </a>
@@ -57,7 +56,6 @@
 
   <main id="content">
     <h1>{m.pageTitle}</h1>
-    <p>{m.tagline}</p>
 
     <section>
       <h2>{m.sectionOverview}</h2>
