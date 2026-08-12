@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="%lang%" data-theme="light">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <script>
+      /* Stamps the stored theme before first paint. Someone who chose dark
+         chose it for a reason, and repainting from light after hydration is a
+         bright flash in their face.
+
+         Inline and dependency-free because it has to run before any module is
+         parsed, so it cannot import the key or the values. Both are owned by
+         src/lib/theme.ts and have to change in the two places together.
+
+         data-js marks that scripting reached this document, so controls that
+         only work with it can stay hidden otherwise. */
+      try {
+        const root = document.documentElement;
+        root.dataset.js = 'on';
+        const stored = localStorage.getItem('gd-landing-theme');
+        root.dataset.theme =
+          stored === 'light' || stored === 'dark'
+            ? stored
+            : matchMedia('(prefers-color-scheme: dark)').matches
+              ? 'dark'
+              : 'light';
+      } catch {
+        /* storage unavailable, the light default in the tag above stands */
+      }
+    </script>
+    %sveltekit.head%
+  </head>
+  <body>
+    <div style="display: contents">%sveltekit.body%</div>
+  </body>
+</html>
