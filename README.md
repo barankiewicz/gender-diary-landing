@@ -39,4 +39,5 @@ as Polish, not translated line by line from the English.
 
 ## License
 
-To be added before the repository goes public. The application is GPLv3.
+GPLv3, in [LICENSE](LICENSE). The application in the sibling repository is under
+the same licence.
