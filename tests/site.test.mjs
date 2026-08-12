@@ -100,11 +100,41 @@ const acquisitionSection = (page, locale) =>
     has: page.getByRole('heading', { name: ACQUISITION[locale].heading }),
   });
 
+/** Presses Tab until the named control holds focus, and says whether it ever
+    did. Reaching a control this way is the claim - that somebody arriving by
+    keyboard alone gets there - which `.focus()` would assume rather than test.
+    Focus is dropped first so that each call means "reachable from the top of
+    the document" rather than "reachable from wherever the last one stopped".
+    The cap is a runaway guard, not a budget: the header has few stops. */
+async function tabTo(page, name, limit = 20) {
+  await page.evaluate(() => document.activeElement?.blur());
+  for (let i = 0; i < limit; i++) {
+    await page.keyboard.press('Tab');
+    const focused = await page.evaluate(() => document.activeElement?.textContent?.trim() || '');
+    if (focused === name) return true;
+  }
+  return false;
+}
+
+/** How far a page spills past the viewport sideways. Zero is the only passing
+    answer, and base.css deliberately declines to clip overflow at the body so
+    that this measurement can still see a layout that broke. */
+const sidewaysOverflow = (page) =>
+  page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+
+/** The contrast ratios the palette produces, read from the page rather than
+    from the stylesheet, so a token that moved is measured where it lands.
+    Also reports whether the two gradient-painted headings are still large
+    enough to be judged against the looser large-text bar. */
 async function contrastTokens(page) {
   return page.evaluate(() => {
     const root = getComputedStyle(document.documentElement);
 
+    /* Resolves any CSS colour to rgb by letting the browser do it. A token
+       that got renamed resolves to the empty string, which would silently
+       inherit some other colour and quietly pass, so it throws instead. */
     const colorToRgb = (value) => {
+      if (!value) throw new Error('a colour token resolved to nothing; was one renamed?');
       const probe = document.createElement('span');
       probe.style.color = value;
       document.body.append(probe);
@@ -136,12 +166,29 @@ async function contrastTokens(page) {
     const blue = colorToRgb(token('--blue'));
     const pink = colorToRgb(token('--pink'));
 
+    const gradA = colorToRgb(token('--grad-a'));
+    const gradB = colorToRgb(token('--grad-b'));
+
+    /* The two headings painted through the gradient, and whether each one is
+       still big enough to be judged as WCAG large text. 24px at any weight,
+       or 18.66px once bold. */
+    const gradientText = ['main h1', '.headline'].map((selector) => {
+      const node = document.querySelector(selector);
+      const style = getComputedStyle(node);
+      const px = Number.parseFloat(style.fontSize);
+      const bold = Number.parseInt(style.fontWeight, 10) >= 700;
+      return { selector, px, bold, large: px >= 24 || (px >= 18.66 && bold) };
+    });
+
     return {
       inkOnPage: ratio(ink, pageColor),
       mutedOnPage: ratio(muted, pageColor),
       inkOnSurface: ratio(ink, surface),
       accentTextOnBlue: ratio(inkOnAccent, blue),
       accentTextOnPink: ratio(inkOnAccent, pink),
+      gradStartOnPage: ratio(gradA, pageColor),
+      gradEndOnPage: ratio(gradB, pageColor),
+      gradientText,
     };
   });
 }
@@ -497,10 +544,7 @@ for (const locale of ['en', 'pl']) {
       await page.setViewportSize({ width: 390, height: 844 });
       for (const suffix of Object.values(PAGE_PATHS)) {
         await page.goto(`${base}/${locale}/${suffix}`);
-        const overflow = await page.evaluate(
-          () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
-        );
-        assert.equal(overflow, 0, `/${locale}/${suffix} scrolls sideways at 390px`);
+        assert.equal(await sidewaysOverflow(page), 0, `/${locale}/${suffix} scrolls sideways at 390px`);
       }
     } finally {
       await context.close();
@@ -518,18 +562,15 @@ for (const locale of ['en', 'pl']) {
 
       const oppositeLanguage = locale === 'en' ? 'Polski' : 'English';
       const expectedPath = locale === 'en' ? '/pl/' : '/en/';
+      const darkLabel = locale === 'en' ? 'Dark' : 'Ciemny';
 
-      // Tab through the top controls until the other language link is focused.
-      let landed = false;
-      for (let i = 0; i < 20; i++) {
-        await page.keyboard.press('Tab');
-        const focused = await page.evaluate(() => document.activeElement?.textContent?.trim() || '');
-        if (focused === oppositeLanguage) {
-          landed = true;
-          break;
-        }
-      }
-      assert.ok(landed, `keyboard could not reach language link: ${oppositeLanguage}`);
+      /* The theme control goes first, on the page as it was loaded. Switching
+         language is a full document load, and pressing a theme button on the
+         far side of one races the script that gives it its behaviour: the
+         button is on screen as soon as app.html sets data-js, but does not
+         answer until the component has hydrated. That race belongs to the
+         test, not to the person, so it is simply avoided here. */
+      assert.ok(await tabTo(page, darkLabel), `Tab never reached the theme button: ${darkLabel}`);
 
       const ring = await page.evaluate(() => {
         const style = getComputedStyle(document.activeElement);
@@ -537,13 +578,13 @@ for (const locale of ['en', 'pl']) {
       });
       assert.ok(ring.width >= 1 && ring.line !== 'none', 'focused control had no visible focus ring');
 
+      await page.keyboard.press('Space');
+      assert.equal(await themeNow(page), 'dark', 'Space on the dark button did not apply dark');
+
+      // Then the language link, whose whole point is that it navigates.
+      assert.ok(await tabTo(page, oppositeLanguage), `Tab never reached: ${oppositeLanguage}`);
       await page.keyboard.press('Enter');
       await page.waitForURL(`${base}${expectedPath}`);
-
-      const darkLabel = locale === 'en' ? 'Ciemny' : 'Dark';
-      await page.getByRole('button', { name: darkLabel }).first().focus();
-      await page.keyboard.press('Space');
-      assert.equal(await themeNow(page), 'dark');
     } finally {
       await context.close();
     }
@@ -553,33 +594,47 @@ for (const locale of ['en', 'pl']) {
     const { context, page } = await visitor({ locale: locale === 'pl' ? 'pl-PL' : 'en-US' });
     try {
       await page.goto(`${base}/${locale}/`);
-      const semantic = await page.evaluate(() => ({
-        hasBanner: Boolean(document.querySelector('header')),
-        hasMain: Boolean(document.querySelector('main#content')),
-        navNames: [...document.querySelectorAll('nav')].map((node) => node.getAttribute('aria-label') || ''),
-        h1: document.querySelector('main h1')?.textContent?.trim() || '',
-        languageLinks: [...document.querySelectorAll('header nav a')].map((node) =>
-          node.textContent?.trim() || '',
-        ),
-        themeButtons: [...document.querySelectorAll('.theme-control button')].map((node) =>
-          node.textContent?.trim() || '',
-        ),
-      }));
+      /* Asked for by role and by name throughout, because that is the page as
+         a screen reader receives it. A <header> that drifted inside a section
+         would stop being a banner while still being a <header>, and querying
+         the tag would keep passing; asking for the banner role does not. */
+      const languageLabel = locale === 'en' ? 'Language' : 'Język';
+      const themeLabel = locale === 'en' ? 'Theme' : 'Motyw';
 
-      assert.equal(semantic.hasBanner, true, 'missing banner landmark');
-      assert.equal(semantic.hasMain, true, 'missing main landmark');
-      assert.ok(
-        semantic.navNames.includes(locale === 'en' ? 'Language' : 'Język'),
-        'language control lacks meaningful navigation label',
+      await page.getByRole('banner').waitFor();
+      await page.getByRole('main').waitFor();
+
+      assert.equal(
+        await page.getByRole('navigation', { name: languageLabel }).count(),
+        1,
+        `no navigation region announces itself as ${languageLabel}`,
       );
-      assert.equal(semantic.h1, 'Gender Diary', 'missing top-level heading announcement');
+      assert.equal(
+        await page.getByRole('heading', { level: 1, name: 'Gender Diary' }).count(),
+        1,
+        'the page opens without a level-one heading a reader can land on',
+      );
 
+      // Both languages are offered by name, in their own language, on every page.
       for (const name of ['English', 'Polski']) {
-        assert.ok(semantic.languageLinks.includes(name), `missing language link name: ${name}`);
+        assert.equal(
+          await page.getByRole('link', { name, exact: true }).count(),
+          1,
+          `no link offers the ${name} version by name`,
+        );
       }
 
+      /* The theme buttons are a named group so a reader meets them as one
+         control rather than three loose buttons. */
+      const themeGroup = page.getByRole('group', { name: themeLabel });
+      assert.equal(await themeGroup.count(), 1, `the theme buttons are not grouped as ${themeLabel}`);
+
       for (const label of locale === 'en' ? ['System', 'Light', 'Dark'] : ['Systemowy', 'Jasny', 'Ciemny']) {
-        assert.ok(semantic.themeButtons.includes(label), `missing theme button name: ${label}`);
+        assert.equal(
+          await themeGroup.getByRole('button', { name: label, exact: true }).count(),
+          1,
+          `the theme group offers no button named ${label}`,
+        );
       }
     } finally {
       await context.close();
@@ -596,6 +651,9 @@ for (const scheme of ['light', 'dark']) {
     const { context, page } = await visitor({ colorScheme: scheme });
     try {
       await page.goto(`${base}/en/`);
+      /* Read back the theme the cascade actually settled on. Without this the
+         dark run would still pass having measured the light palette. */
+      assert.equal(await themeNow(page), scheme, `asked for ${scheme} and got the other palette`);
 
       const ratios = await contrastTokens(page);
       assert.ok(ratios.inkOnPage >= 4.5, `ink/page contrast too low: ${ratios.inkOnPage.toFixed(2)}`);
@@ -615,6 +673,28 @@ for (const scheme of ['light', 'dark']) {
         ratios.accentTextOnPink >= 4.5,
         `accent text/pink contrast too low: ${ratios.accentTextOnPink.toFixed(2)}`,
       );
+
+      /* The hero heading and the h1 are painted in the gradient itself rather
+         than in --ink, so they answer to --grad-a and --grad-b and to the 3:1
+         bar WCAG allows large text. The size is asserted first: the lower bar
+         is earned by being display-sized, and a heading shrunk back under it
+         would otherwise keep passing on a threshold it no longer qualifies
+         for. In light these endpoints sit at 4.16 and 4.32, deliberately
+         deepened for this - see the token comment in base.css. */
+      for (const heading of ratios.gradientText) {
+        assert.ok(
+          heading.large,
+          `${heading.selector} is ${heading.px}px${heading.bold ? ' bold' : ''}, too small for the large-text contrast bar`,
+        );
+      }
+      assert.ok(
+        ratios.gradStartOnPage >= 3,
+        `gradient start/page contrast too low: ${ratios.gradStartOnPage.toFixed(2)}`,
+      );
+      assert.ok(
+        ratios.gradEndOnPage >= 3,
+        `gradient end/page contrast too low: ${ratios.gradEndOnPage.toFixed(2)}`,
+      );
     } finally {
       await context.close();
     }
@@ -622,23 +702,26 @@ for (const scheme of ['light', 'dark']) {
 }
 
 /* Somebody who doubles the text size is the reason the layout is built in
-   relative units. Doubling the root font size is the part of browser zoom
-   that reflows text, and a layout pinned in pixels answers it by pushing the
-   page sideways - the same failure the 390px loop above looks for, reached
-   from the other direction. Polish runs too, because it is the longer text. */
+   relative units, and a layout pinned in pixels answers by pushing the page
+   sideways. Run at 390px rather than at the default desktop width: a wide
+   viewport absorbs the extra text and the check passes on slack instead of
+   on merit - at 1280px this same page survives 400%. The phone is where the
+   two pressures meet. Polish runs too, because it is the longer text. */
 for (const locale of ['en', 'pl']) {
-  test(`${locale}: doubling the text size does not push the page sideways`, async () => {
+  test(`${locale}: doubling the text size does not push a phone page sideways`, async () => {
     const { context, page } = await visitor({});
     try {
+      await page.setViewportSize({ width: 390, height: 844 });
       for (const suffix of Object.values(PAGE_PATHS)) {
         await page.goto(`${base}/${locale}/${suffix}`);
         await page.evaluate(() => {
           document.documentElement.style.fontSize = '200%';
         });
-        const overflow = await page.evaluate(
-          () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+        assert.equal(
+          await sidewaysOverflow(page),
+          0,
+          `/${locale}/${suffix} scrolls sideways at 200% text size on a 390px screen`,
         );
-        assert.equal(overflow, 0, `/${locale}/${suffix} scrolls sideways at 200% text size`);
       }
     } finally {
       await context.close();
@@ -652,12 +735,25 @@ test('reduced motion disables the moving parts rather than shortening them', asy
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await page.goto(`${base}/en/`);
 
-    const reduced = await page.evaluate(() => ({
-      hero: getComputedStyle(document.querySelector('main h1')).animationName,
-      blob: getComputedStyle(document.querySelector('.blob-a')).animationName,
-      ctaTransition: getComputedStyle(document.querySelector('.cta')).transitionProperty,
-      badgeTransition: getComputedStyle(document.querySelector('.badge')).transitionProperty,
-    }));
+    /* Motion is only observable as computed style, so this test reads style
+       where the others read behaviour. What it asks for is still addressed by
+       role and name wherever a role exists; the aurora blob is decorative and
+       has no accessible name to ask for, so it stays a class. */
+    const heading = page.getByRole('heading', { level: 1, name: 'Gender Diary' });
+    const action = page.getByRole('link', { name: ACQUISITION.en.action }).first();
+    const channel = page.getByRole('link', { name: CHANNELS[0], exact: true }).first();
+
+    const animationOf = (locator) =>
+      locator.evaluate((node) => getComputedStyle(node).animationName);
+    const transitionOf = (locator) =>
+      locator.evaluate((node) => getComputedStyle(node).transitionProperty);
+
+    const reduced = {
+      hero: await animationOf(heading),
+      blob: await page.locator('.blob-a').evaluate((node) => getComputedStyle(node).animationName),
+      ctaTransition: await transitionOf(action),
+      badgeTransition: await transitionOf(channel),
+    };
 
     assert.equal(reduced.hero, 'none', 'hero heading still runs rise or shimmer with reduced motion');
     assert.equal(reduced.blob, 'none', 'aurora blob still animates with reduced motion');
