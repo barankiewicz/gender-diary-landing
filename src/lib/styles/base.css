@@ -1,6 +1,13 @@
-/* Structural styling only. Ticket 09 owns the visual direction; what is here
-   exists so that light and dark are visibly different and the page is legible
-   while the copy is written.
+/* The visual direction (ticket 09): dark aurora leads, light is its daytime
+   counterpart. The trans flag's three colours - #5BCEFA, #F5A9B8, white - are
+   the whole accent vocabulary, used as atmosphere (gradients, glows) rather
+   than as stripes. Nothing else on the site gets to be a colour.
+
+   What lives here: the tokens, the font, the shell (header, controls), the
+   two shared control styles (.cta, .status), focus and selection, and every
+   keyframe. Section layouts live scoped in their components. All motion sits
+   behind prefers-reduced-motion: no-preference, so the reduced-motion page is
+   simply this page with nothing moving.
 
    The cascade decides the theme, not a script. `data-theme` on <html> is an
    explicit choice and nothing else: when it is absent, the media query below
@@ -8,98 +15,227 @@
    --theme names the theme in effect so that a test can read what the page is
    actually painted in rather than what an attribute claims. */
 
+@font-face {
+  /* Subset to Latin + Latin Extended-A (the Polish diacritics live there),
+     variable weight 300-700. The file and its OFL licence are in
+     static/fonts/. */
+  font-family: 'Space Grotesk';
+  src: url('/fonts/space-grotesk.woff2') format('woff2');
+  font-weight: 300 700;
+  font-display: swap;
+}
+
 :root,
 :root[data-theme='light'] {
   --theme: light;
-  --page: #ffffff;
-  --ink: #1a1a1a;
-  --muted: #565656;
-  --line: #d8d8d8;
+  --page: #f7f7fb;
+  --surface: #ffffff;
+  --panel: rgba(255, 255, 255, 0.72);
+  --ink: #171a21;
+  --muted: #545b6b;
+  --line: rgba(23, 26, 33, 0.14);
+  /* The flag colours as this theme can afford them: decorative endpoints stay
+     vivid, text endpoints are deepened until they hold WCAG AA at display
+     sizes on --page. */
+  --blue: #5bcefa;
+  --pink: #f5a9b8;
+  --grad-a: #0d7fb5;
+  --grad-b: #c14b78;
+  --blob-blue: rgba(91, 206, 250, 0.38);
+  --blob-pink: rgba(245, 169, 184, 0.42);
+  --blob-white: rgba(255, 255, 255, 0.9);
+  --glow: rgba(193, 75, 120, 0.18);
+  --header: rgba(247, 247, 251, 0.78);
   color-scheme: light;
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme='light']) {
     --theme: dark;
-    --page: #14161a;
-    --ink: #f2f2f2;
-    --muted: #adadad;
-    --line: #3a3d44;
+    --page: #0c0f16;
+    --surface: #141824;
+    --panel: rgba(20, 24, 36, 0.6);
+    --ink: #f2f3f7;
+    --muted: #a5abba;
+    --line: rgba(165, 185, 225, 0.16);
+    --blue: #5bcefa;
+    --pink: #f5a9b8;
+    --grad-a: #5bcefa;
+    --grad-b: #f5a9b8;
+    --blob-blue: rgba(91, 206, 250, 0.42);
+    --blob-pink: rgba(245, 169, 184, 0.42);
+    --blob-white: rgba(242, 243, 247, 0.2);
+    --glow: rgba(245, 169, 184, 0.22);
+    --header: rgba(12, 15, 22, 0.72);
     color-scheme: dark;
   }
 }
 
 :root[data-theme='dark'] {
   --theme: dark;
-  --page: #14161a;
-  --ink: #f2f2f2;
-  --muted: #adadad;
-  --line: #3a3d44;
+  --page: #0c0f16;
+  --surface: #141824;
+  --panel: rgba(20, 24, 36, 0.6);
+  --ink: #f2f3f7;
+  --muted: #a5abba;
+  --line: rgba(165, 185, 225, 0.16);
+  --blue: #5bcefa;
+  --pink: #f5a9b8;
+  --grad-a: #5bcefa;
+  --grad-b: #f5a9b8;
+  --blob-blue: rgba(91, 206, 250, 0.3);
+  --blob-pink: rgba(245, 169, 184, 0.3);
+  --blob-white: rgba(242, 243, 247, 0.14);
+  --glow: rgba(245, 169, 184, 0.22);
+  --header: rgba(12, 15, 22, 0.72);
   color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
 }
 
 body {
   margin: 0;
   background: var(--page);
   color: var(--ink);
-  font-family: system-ui, sans-serif;
-  line-height: 1.5;
+  font-family: 'Space Grotesk', system-ui, sans-serif;
+  font-size: 1.0625rem;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+  /* Wide compositions scroll inside their own containers, never the page. */
+  overflow-x: clip;
 }
 
-.layout {
-  margin: 0 auto;
-  max-width: 42rem;
-  padding: 1.5rem 1rem 4rem;
+::selection {
+  background: var(--pink);
+  color: #0c0f16;
 }
+
+:focus-visible {
+  outline: 2px solid var(--blue);
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+
+h1,
+h2,
+h3 {
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  text-wrap: balance;
+}
+
+p {
+  margin: 0 0 1em;
+}
+
+a {
+  color: inherit;
+}
+
+/* ---- The shell ------------------------------------------------------- */
 
 .controls {
+  position: sticky;
+  top: 0;
+  z-index: 10;
   display: flex;
   flex-wrap: wrap;
-  gap: 1.5rem;
-  padding-bottom: 1.5rem;
+  align-items: center;
+  gap: 0.75rem 1.5rem;
+  padding: 0.75rem clamp(1rem, 4vw, 2.5rem);
+  background: var(--header);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
   border-bottom: 1px solid var(--line);
+}
+
+.brand {
+  margin-right: auto;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  text-decoration: none;
+}
+
+/* With no brand link on the landing page, the controls still sit right. */
+.controls > .control:first-child {
+  margin-left: auto;
 }
 
 .control {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: 0.5rem;
 }
 
 .control-label {
   color: var(--muted);
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
 }
 
 .control a,
 .control button {
   background: none;
   border: 1px solid var(--line);
-  border-radius: 0.25rem;
+  border-radius: 999px;
   color: inherit;
   cursor: pointer;
   font: inherit;
-  font-size: 0.875rem;
-  padding: 0.25rem 0.6rem;
+  font-size: 0.8125rem;
+  padding: 0.3rem 0.75rem;
   text-decoration: none;
+  transition:
+    border-color 0.2s,
+    background-color 0.2s;
+}
+
+.control a:hover,
+.control button:hover {
+  border-color: var(--blue);
 }
 
 .control [aria-current],
 .control [aria-pressed='true'] {
-  border-color: currentColor;
+  border-color: transparent;
+  background:
+    linear-gradient(var(--surface), var(--surface)) padding-box,
+    linear-gradient(90deg, var(--blue), var(--pink)) border-box;
   font-weight: 600;
 }
 
-/* The one action on the page. It reads as a control rather than as running
-   text; how much weight it carries is ticket 09's decision. */
-.action {
+/* ---- The two shared controls ------------------------------------------ */
+
+/* The action: a vivid trans-gradient pill with near-black text, the same in
+   both themes, so it is unmistakably the thing to press. */
+.cta {
   display: inline-block;
-  border: 1px solid currentColor;
-  border-radius: 0.25rem;
-  color: inherit;
+  background: linear-gradient(100deg, var(--blue), var(--pink));
+  background-size: 160% 100%;
+  background-position: 0% 0%;
+  border: none;
+  border-radius: 999px;
+  color: #0c0f16;
   font-weight: 600;
-  padding: 0.5rem 1rem;
+  font-size: 1.0625rem;
+  letter-spacing: -0.01em;
+  padding: 0.85rem 2.1rem;
   text-decoration: none;
+  box-shadow: 0 8px 32px var(--glow);
+  transition:
+    background-position 0.35s,
+    transform 0.2s,
+    box-shadow 0.2s;
+}
+
+.cta:hover {
+  background-position: 100% 0%;
+  transform: translateY(-2px);
+  box-shadow: 0 12px 40px var(--glow);
+}
+
+.cta:active {
+  transform: translateY(0) scale(0.98);
 }
 
 /* An availability status is not a control and must not read as one. */
@@ -112,4 +248,85 @@ body {
    the script in app.html has said scripting is running. */
 :root:not([data-js]) .theme-control {
   display: none;
+}
+
+/* ---- Motion ------------------------------------------------------------ */
+
+/* Every keyframe on the site. Everything that references them does so inside
+   this block, so a reduced-motion visitor gets the finished page, static. */
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes rise {
+    from {
+      opacity: 0;
+      transform: translateY(1.5rem);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+
+  @keyframes drift-a {
+    0%,
+    100% {
+      transform: translate(0, 0) scale(1);
+    }
+    50% {
+      transform: translate(8vw, 6vh) scale(1.15);
+    }
+  }
+
+  @keyframes drift-b {
+    0%,
+    100% {
+      transform: translate(0, 0) scale(1.1);
+    }
+    50% {
+      transform: translate(-7vw, -4vh) scale(0.95);
+    }
+  }
+
+  @keyframes drift-c {
+    0%,
+    100% {
+      transform: translate(0, 0);
+    }
+    50% {
+      transform: translate(4vw, -7vh);
+    }
+  }
+
+  @keyframes shimmer {
+    from {
+      background-position: 0% 0%;
+    }
+    to {
+      background-position: -200% 0%;
+    }
+  }
+
+  /* Entrance for the hero, stamped element by element with --enter. */
+  .enter {
+    animation: rise 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
+    animation-delay: calc(var(--enter, 0) * 120ms);
+  }
+
+  /* A slow sheen across gradient-clipped text. The element brings its own
+     gradient; this only moves it, so a reduced-motion visitor sees the same
+     colours standing still. */
+  .shimmer {
+    background-size: 200% 100%;
+    animation: shimmer 7s linear infinite;
+  }
+
+  /* Scroll reveal, CSS only. Browsers without scroll-driven animations skip
+     the @supports block and show the finished page, which is also what the
+     fill mode falls back to. */
+  @supports (animation-timeline: view()) {
+    .reveal {
+      animation: rise 1ms linear both;
+      animation-timeline: view();
+      animation-range: entry 5% entry 45%;
+    }
+  }
 }

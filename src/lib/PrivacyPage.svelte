@@ -16,13 +16,58 @@
      passes, and tests/site.test.mjs fails if the gated block turns up here
      first. -->
 <PageShell {locale} page="privacy" title={privacy.title}>
-  <h1>{privacy.title}</h1>
-  <p>{privacy.intro}</p>
+  <article>
+    <h1>{privacy.title}</h1>
+    <p class="intro">{privacy.intro}</p>
 
-  {#each privacy.sections as section (section.heading)}
-    <section>
-      <h2>{section.heading}</h2>
-      <Prose paragraphs={section.paragraphs} />
-    </section>
-  {/each}
+    {#each privacy.sections as section (section.heading)}
+      <section class="reveal">
+        <h2>{section.heading}</h2>
+        <Prose paragraphs={section.paragraphs} />
+      </section>
+    {/each}
+  </article>
 </PageShell>
+
+<style>
+  /* The page a reader opens while deciding whether to trust the app with
+     their journal. It stays a quiet reading column: the direction's colour
+     shows up only as the rule a heading hangs from. */
+  article {
+    max-width: 44rem;
+    margin: 0 auto;
+    padding: clamp(2.5rem, 7vh, 5rem) clamp(1rem, 4vw, 2.5rem) clamp(4rem, 10vh, 7rem);
+  }
+
+  h1 {
+    font-size: clamp(1.9rem, 4.5vw, 3rem);
+    font-weight: 600;
+    margin: 0 0 1.5rem;
+  }
+
+  .intro {
+    font-size: clamp(1.1rem, 2vw, 1.3rem);
+    color: var(--muted);
+    margin-bottom: 3rem;
+  }
+
+  section {
+    margin-bottom: 3rem;
+  }
+
+  section:last-child {
+    margin-bottom: 0;
+  }
+
+  h2 {
+    font-size: clamp(1.3rem, 2.5vw, 1.7rem);
+    font-weight: 600;
+    border-left: 3px solid var(--pink);
+    padding-left: 1rem;
+    margin: 0 0 1.25rem;
+  }
+
+  section:nth-child(even) h2 {
+    border-color: var(--blue);
+  }
+</style>

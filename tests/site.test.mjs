@@ -272,31 +272,41 @@ test('choosing system hands the theme back to the system', async () => {
 // Acquisition: one action, and honest status for everything else
 
 for (const locale of ['en', 'pl']) {
-  test(`${locale}: one action on the page, and it opens the Journal`, async () => {
+  test(`${locale}: the actions on the page, and where each one goes`, async () => {
     const { context, page } = await visitor({});
     try {
       await page.goto(`${base}/${locale}/`);
 
-      /* Everything in main is content, one action, and the way to the site's
-         other page. The language and theme controls live outside it, so a
-         third link here would be something new competing with Start journal.
-         The privacy page is not competition: it goes further into this site
-         rather than out of it, which is what the assertion checks by naming
-         both destinations rather than counting them. */
+      /* This list was [privacy, Journal] until ticket 09. The splash now
+         shows the four channel badges as buttons pointing at this page, on
+         Alicja's direction (2026-08-12): design the page as if the product
+         were finished. Each badge gets its real destination when its channel
+         has an artifact (Journal ticket 18). Start journal appears twice, at
+         the top for someone arriving convinced and in the acquisition
+         section for someone who has just read their way to a decision, and
+         both carry the bare URL and nothing else. */
       const links = await page.locator('main a').evaluateAll((found) => found.map((a) => a.href));
       assert.deepEqual(
         links,
-        [`${base}/${locale}/privacy/`, JOURNAL_URL],
-        'main offered something besides the privacy page and Start journal',
+        [
+          JOURNAL_URL,
+          ...CHANNELS.map(() => `${base}/${locale}/`),
+          `${base}/${locale}/privacy/`,
+          JOURNAL_URL,
+        ],
+        'main offered something besides the splash actions, the privacy page and Start journal',
       );
 
-      const action = page.getByRole('link', { name: ACQUISITION[locale].action });
-      assert.equal(
-        await action.getAttribute('href'),
-        JOURNAL_URL,
-        'the Journal link carries something it should not, or points somewhere else',
-      );
-      assert.equal(await action.getAttribute('target'), null, 'the action opened a second tab');
+      const actions = page.getByRole('link', { name: ACQUISITION[locale].action });
+      assert.equal(await actions.count(), 2, 'Start journal is the splash action and the closing one');
+      for (const action of await actions.all()) {
+        assert.equal(
+          await action.getAttribute('href'),
+          JOURNAL_URL,
+          'the Journal link carries something it should not, or points somewhere else',
+        );
+        assert.equal(await action.getAttribute('target'), null, 'the action opened a second tab');
+      }
     } finally {
       await context.close();
     }
@@ -404,17 +414,18 @@ test('the site keeps to its own origin and its own storage', async () => {
     const foreign = requests.filter((url) => !url.startsWith(base));
     assert.deepEqual(foreign, [], 'the page requested something off this origin');
 
-    /* One link leaves this origin, and this is the list of it. A language or
-       theme choice reaching the Journal would have to ride on an outbound
-       link, so anyone adding a second one has to come here and say what it
-       carries. This person chose dark and then English, and neither choice
-       appears in what the link asks for. */
+    /* Both instances of the one outbound link (the splash action and the
+       acquisition section's, since ticket 09), and this is the list of them.
+       A language or theme choice reaching the Journal would have to ride on
+       an outbound link, so anyone adding another has to come here and say
+       what it carries. This person chose dark and then English, and neither
+       choice appears in what either link asks for. */
     const outbound = await page.evaluate(() =>
       [...document.querySelectorAll('a[href]')]
         .map((link) => link.href)
         .filter((href) => new URL(href).origin !== location.origin),
     );
-    assert.deepEqual(outbound, [JOURNAL_URL]);
+    assert.deepEqual(outbound, [JOURNAL_URL, JOURNAL_URL]);
 
     assert.equal(await page.evaluate(() => document.cookie), '', 'the site set a cookie');
     assert.equal((await context.cookies()).length, 0);
@@ -445,9 +456,12 @@ test('without scripting the page reads, in the system theme', async () => {
       'a theme control that cannot work was left on screen',
     );
     assert.equal(
-      await page.getByRole('link', { name: ACQUISITION.pl.action }).getAttribute('href'),
+      await page
+        .getByRole('link', { name: ACQUISITION.pl.action })
+        .first()
+        .getAttribute('href'),
       JOURNAL_URL,
-      'the one action on the page needed scripting to work',
+      'the splash action needed scripting to work',
     );
 
     await page.getByRole('link', { name: 'English' }).click();
@@ -750,9 +764,10 @@ for (const locale of ['en', 'pl']) {
         .evaluateAll((found) => found.map((h) => h.textContent.trim()));
       assert.deepEqual(screens, TOUR[locale]);
 
-      /* Ticket 09 owns the screenshots and they do not exist. The captions
-         stand on their own until they do, and nothing here shows a frame, an
-         alt text or a placeholder describing a picture that is not there. */
+      /* The screenshots do not exist yet: ticket 09 shipped the tour's design
+         with each card reserving the frame its screenshot will occupy, and
+         ticket 15 captures them from invented data. Until it does, no card
+         shows a picture or an alt text claiming one. */
       assert.equal(await tour.locator('img').count(), 0, 'the tour claimed a picture');
     } finally {
       await context.close();

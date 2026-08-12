@@ -43,13 +43,12 @@
   <link rel="alternate" hreflang="x-default" href={SITE_ORIGIN + defaultPathFor(page)} />
 </svelte:head>
 
-<div class="layout">
-  <header class="controls">
+<header class="controls">
     {#if page !== 'landing'}
       <!-- The way back, on every page that is not the one it points at. It is
            the site's name rather than a word like "back", so it says where it
            goes and needs no translation of its own. -->
-      <a href={pathFor(locale)}>{m.pageTitle}</a>
+      <a class="brand" href={pathFor(locale)}>{m.pageTitle}</a>
     {/if}
 
     <nav class="control" aria-label={m.languageLabel}>
@@ -82,4 +81,3 @@
   <main id="content">
     {@render children()}
   </main>
-</div>
