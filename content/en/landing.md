@@ -58,7 +58,8 @@ page.
 
 **Primary action**
 
-Start journal. Owned by ticket 06.
+Start journal. It is on the page, and the Acquisition section below says what it links
+to and why nothing else on the page competes with it.
 
 ### What it is
 
@@ -283,6 +284,59 @@ file. Listed here only so the feature summary does not look complete without it.
 
 ---
 
+## Acquisition
+
+*Gate: shipped for Start journal, which opens the web Journal that exists today.
+Everything Android is gated on Journal ticket 18, which is what produces the artifacts,
+and on Journal ticket 11, which is why no sentence here says the app runs on Android.*
+
+**The copy for this section is not in this file.** It is in `messages/en.json`, under
+`acquisitionIntro`, `startJournal`, `acquisitionAndroid`, `channelStatus` and
+`channels`, and it is on the page today. Every other block in this file is copy waiting
+for a renderer, so quoting these strings here would leave two copies of a live sentence
+to drift apart quietly. What follows is the reasoning the strings cannot carry.
+
+**Start journal** links to `https://app.genderdiary.barankiewicz.dev/`, in this tab,
+with nothing appended: no campaign parameter, no referral identifier, and neither of
+the two choices this origin remembers. It is the only action on the page, and a test
+counts the links in `main` rather than trusting anyone to keep it that way.
+
+**The four channels are in alphabetical order,** because every other order is a
+recommendation, including the one that puts Play first on the grounds that most people
+are already on Play.
+
+**None of them is a link, because none of them has anything behind it.** Each renders
+as its name and a status, and a test fails if one of them renders as a link. What is
+missing is Journal ticket 18: signed artifacts, one application ID, and a release the
+channels can follow.
+
+**No badge artwork yet.** Play's brand rules do not allow its badge without a live
+listing, and the other three have nothing to put on a badge. When they go live, Play
+and F-Droid use their own artwork under their own rules, and Aurora and Obtainium get
+this site's own controls, which is also what stops them reading as endorsements.
+
+**Aurora installs the Play package.** Calling it a separate source would tell somebody
+they were getting a different build. There is no mirror link on this page and there
+will not be one: a reader who uses Aurora already has Aurora.
+
+**Obtainium needs the source and the rule, not the name alone.** It matches releases by
+artifact name, so a carelessly named debug build is one it would install without
+complaint. The releases page and the exact file name are fixed by the first release,
+which is why the copy states the rule instead of inventing a URL. The Journal
+repository is not public yet either, so a link today would be a 404.
+
+### Staged: the F-Droid signing warning
+
+*Gate: Journal ticket 18, on its last acceptance box, which decides whether the F-Droid
+signature can be update-compatible and writes the answer down for this site. If it can,
+this block is never published. If it cannot, it goes next to F-Droid.*
+
+> F-Droid signs its own build, and Android will not install it over a build signed by
+> anyone else. Switching in either direction means exporting an Archive first, then
+> uninstalling, then installing the other build and importing the Archive back.
+
+---
+
 ## Source, licence and support
 
 ### Source
@@ -331,9 +385,6 @@ Ticket 05 writes the Polish. Not from this file sentence by sentence. Take the c
 then write Polish, and read the grammatical-gender section of the marketing context
 first, because several sentences here address the reader in a way Polish cannot copy
 without picking a gender for them.
-
-Ticket 06 owns Start journal and the channel list. The hero above leaves the button to
-it.
 
 Ticket 07 owns titles, descriptions and structured data. The only claims available to
 mark up are the ones marked shipped here.

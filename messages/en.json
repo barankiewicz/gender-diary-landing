@@ -9,5 +9,27 @@
   "sectionOverview": "What Gender Diary is",
   "sectionPrivacy": "What it protects",
   "sectionAcquisition": "How to get it",
+  "acquisitionIntro": "Gender Diary runs in a browser. It opens straight away, with nothing to install and no account to make.",
+  "startJournal": "Start journal",
+  "acquisitionAndroid": "There is no Android app yet. When there is one, these are the four ways to install it, and none of them is the one we recommend. Each becomes a link here once that channel works.",
+  "channelStatus": "Not available yet.",
+  "channels": [
+    {
+      "name": "Aurora",
+      "note": "Aurora installs the same package as Google Play. It is a different way to get that package, not a different build."
+    },
+    {
+      "name": "F-Droid",
+      "note": "The package in F-Droid's main repository. F-Droid builds it from source itself rather than taking a finished file from us."
+    },
+    {
+      "name": "Google Play",
+      "note": "The listing on Google Play. Installing from there means Google knows the app is on your phone."
+    },
+    {
+      "name": "Obtainium",
+      "note": "Obtainium follows this project's GitHub Releases and installs the signed release APK. It picks that file by name, which is what stops a debug or unsigned build being installed instead. The first release fixes the address of the page and the name of the file."
+    }
+  ],
   "copyPending": "Copy pending."
 }

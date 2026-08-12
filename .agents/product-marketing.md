@@ -1,6 +1,6 @@
 # Product Marketing Context
 
-**Document version:** v4
+**Document version:** v6
 **Last updated:** 2026-08-12
 
 Read this before writing any copy for this site. It settles who the copy is for,
@@ -339,6 +339,7 @@ Polish content files point here rather than repeating it, because a second copy 
 | Lock on leave | blokada przy wyjściu | Sits next to „szybkie wyjście”, which the app already ships |
 | Check-in, the daily prompt | codzienne pytanie | „Przypomnienie” is Reminder, which the glossary says this is not |
 | Web host | serwer WWW | „Nasz serwer” is the one that does not exist, so the one that serves the app needs a different name, or the privacy page denies having a server and then describes one |
+| Start journal, the button | Otwórz dziennik | „Zacznij dziennik” says start a new one, which is wrong for anyone returning to theirs, and „Start” is not a Polish verb. Decided by ticket 06. The imperative keeps the reader ungendered, and lowercase „dziennik” follows the register `content/en/landing.md` settled |
 
 Two terms are decided against `humanizer-pl` rather than with it. "Kamienie milowe" is
 on its list of AI signatures, and it stays, because it is the app's own Polish label for
@@ -346,8 +347,8 @@ Milestones and a reader looking for that screen has to find the same words. The 
 sentence quotes `Notes`, the literal untranslated string the Journal writes into the tab
 title, rather than the Polish the reader might expect.
 
-**Start journal has no Polish name yet.** The spec fixes the English wording of the
-primary action, and nothing fixes what it says in Polish. Ticket 06 owns it.
+**Start journal is „Otwórz dziennik” in Polish.** Ticket 06 decided it, and the row in
+the table above carries the reasoning.
 
 **What does not carry across:** the English "words to avoid" list is a list of English
 words. Polish has its own marketing tells, its own calques from English, and its own
@@ -453,6 +454,7 @@ this site to repeat them.
 
 *Newest first. One line per revision: what changed and why.*
 
+- v6 (2026-08-12) - Start journal is „Otwórz dziennik” in Polish, decided by ticket 06 and reasoned in the term table. The version line above said v4 while this list was already on v5, so it now says what the list says.
 - v5 (2026-08-12) - Recorded the eight Polish terms ticket 05 had to coin, the two places the Polish site deliberately overrides `humanizer-pl`, and the note that Start journal still has no Polish name. „Archiwum” is the one term that deviates from shipped Polish, which the row says out loud.
 - v4 (2026-08-12) - Evidence beats the status line. Phase 2 ticket 03 reads done with every acceptance box unchecked and no service worker in the repository, which would have let "works offline" onto the page.
 - v3 (2026-08-12) - Added the rule that privacy controls are presented as optional rather than expected. They all default to off, and copy that leads with concealment tells this audience the app is something to be ashamed of.

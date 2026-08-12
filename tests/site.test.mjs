@@ -13,6 +13,22 @@ import { createReporter, launchChromium, serveBuild } from './browser-harness.mj
    edit here as well as in src/lib/site.ts. */
 const SITE_ORIGIN = 'https://genderdiary.barankiewicz.dev';
 
+/* The production Journal, on the origin it has to itself. Provisional in the
+   same way, and decided by the Journal repository's ticket 01. The exact
+   string is the assertion: a campaign parameter, a referral identifier or a
+   remembered preference appended to it is what these tests exist to catch. */
+const JOURNAL_URL = 'https://app.genderdiary.barankiewicz.dev/';
+
+/** The four Android channels, in the order the page lists them, which is
+    alphabetical so that no position reads as a recommendation. */
+const CHANNELS = ['Aurora', 'F-Droid', 'Google Play', 'Obtainium'];
+
+/** What a reader sees of the acquisition section, per language. */
+const ACQUISITION = {
+  en: { heading: 'How to get it', action: 'Start journal', status: 'Not available yet.' },
+  pl: { heading: 'Skąd je wziąć', action: 'Otwórz dziennik', status: 'Jeszcze niedostępne.' },
+};
+
 const buildDirectory = fileURLToPath(new URL('../build', import.meta.url));
 const { server, base } = await serveBuild(buildDirectory);
 const browser = await launchChromium();
@@ -60,6 +76,13 @@ async function firstFrameTheme(page) {
 }
 
 const documentLanguage = (page) => page.evaluate(() => document.documentElement.lang);
+
+/** The acquisition section, found by the heading a reader sees rather than by
+    its position among the sections or by a class name. */
+const acquisitionSection = (page, locale) =>
+  page.locator('section').filter({
+    has: page.getByRole('heading', { name: ACQUISITION[locale].heading }),
+  });
 
 // Language: where a first visit lands
 
@@ -230,6 +253,84 @@ test('choosing system hands the theme back to the system', async () => {
   }
 });
 
+// Acquisition: one action, and honest status for everything else
+
+for (const locale of ['en', 'pl']) {
+  test(`${locale}: one action on the page, and it opens the Journal`, async () => {
+    const { context, page } = await visitor({});
+    try {
+      await page.goto(`${base}/${locale}/`);
+
+      /* Everything in main is content and one action. The language and theme
+         controls live outside it, so a second link here would mean a second
+         thing competing with Start journal. */
+      const actions = page.locator('main a');
+      assert.equal(await actions.count(), 1, 'the page did not offer exactly one action');
+
+      const action = actions.first();
+      assert.equal(await action.innerText(), ACQUISITION[locale].action);
+      assert.equal(
+        await action.getAttribute('href'),
+        JOURNAL_URL,
+        'the Journal link carries something it should not, or points somewhere else',
+      );
+      assert.equal(await action.getAttribute('target'), null, 'the action opened a second tab');
+    } finally {
+      await context.close();
+    }
+  });
+
+  test(`${locale}: a channel that is not live is status text, never a link`, async () => {
+    const { context, page } = await visitor({});
+    try {
+      await page.goto(`${base}/${locale}/`);
+      const entries = acquisitionSection(page, locale).getByRole('listitem');
+      assert.equal(await entries.count(), CHANNELS.length, 'the channel list changed length');
+
+      /* No channel is live: Journal ticket 18 is what produces the artifacts.
+         When one of them goes live, this loop grows its other branch, and that
+         branch asserts the rendered href resolves to the application ID
+         `dev.barankiewicz.genderdiary` rather than to some other package. */
+      for (const [index, name] of CHANNELS.entries()) {
+        const entry = entries.nth(index);
+        const text = await entry.innerText();
+        assert.ok(text.startsWith(name), `channel ${index + 1} was not ${name}`);
+        assert.ok(
+          text.includes(ACQUISITION[locale].status),
+          `${name} did not say whether it works yet`,
+        );
+        assert.equal(
+          await entry.getByRole('link').count(),
+          0,
+          `${name} rendered as a link while there is nothing behind it`,
+        );
+      }
+    } finally {
+      await context.close();
+    }
+  });
+
+  test(`${locale}: Aurora names the Play package and Obtainium names its source`, async () => {
+    const { context, page } = await visitor({});
+    try {
+      await page.goto(`${base}/${locale}/`);
+      const entries = acquisitionSection(page, locale).getByRole('listitem');
+
+      const aurora = await entries.nth(CHANNELS.indexOf('Aurora')).innerText();
+      assert.ok(
+        aurora.includes('Google Play'),
+        'Aurora was described without saying which package it installs',
+      );
+
+      const obtainium = await entries.nth(CHANNELS.indexOf('Obtainium')).innerText();
+      assert.ok(obtainium.includes('GitHub'), 'Obtainium was described without naming its source');
+      assert.ok(obtainium.includes('APK'), 'Obtainium was described without the artifact rule');
+    } finally {
+      await context.close();
+    }
+  });
+}
+
 // Isolation: what the site writes, and what it talks to
 
 test('the site keeps to its own origin and its own storage', async () => {
@@ -244,16 +345,17 @@ test('the site keeps to its own origin and its own storage', async () => {
     const foreign = requests.filter((url) => !url.startsWith(base));
     assert.deepEqual(foreign, [], 'the page requested something off this origin');
 
-    /* Nothing leaves this origin, so no language or theme state can travel to
-       the Journal: there is nowhere on the page for it to travel to. Ticket 06
-       adds the first outbound links, and this assertion is what will make
-       anyone adding one look at what the link carries. */
+    /* One link leaves this origin, and this is the list of it. A language or
+       theme choice reaching the Journal would have to ride on an outbound
+       link, so anyone adding a second one has to come here and say what it
+       carries. This person chose dark and then English, and neither choice
+       appears in what the link asks for. */
     const outbound = await page.evaluate(() =>
       [...document.querySelectorAll('a[href]')]
         .map((link) => link.href)
         .filter((href) => new URL(href).origin !== location.origin),
     );
-    assert.deepEqual(outbound, []);
+    assert.deepEqual(outbound, [JOURNAL_URL]);
 
     assert.equal(await page.evaluate(() => document.cookie), '', 'the site set a cookie');
     assert.equal((await context.cookies()).length, 0);
@@ -282,6 +384,11 @@ test('without scripting the page reads, in the system theme', async () => {
       await page.locator('.theme-control').isVisible(),
       false,
       'a theme control that cannot work was left on screen',
+    );
+    assert.equal(
+      await page.getByRole('link', { name: ACQUISITION.pl.action }).getAttribute('href'),
+      JOURNAL_URL,
+      'the one action on the page needed scripting to work',
     );
 
     await page.getByRole('link', { name: 'English' }).click();

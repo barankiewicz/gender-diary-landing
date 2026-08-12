@@ -54,9 +54,8 @@ dropping it.
 
 **Primary action**
 
-Start journal. Owned by ticket 06, which also decides whether that button keeps its
-English name in Polish. The English file fixed the wording from the spec; the Polish
-name is a live question and this ticket does not settle it.
+„Otwórz dziennik”, on the page today. The Acquisition section below says why the button
+is not called Start journal in Polish.
 
 ### What it is
 
@@ -292,6 +291,50 @@ not look complete without it.*
 
 ---
 
+## Acquisition
+
+*Gate: shipped for the primary action. Everything Android is gated on Journal tickets 18
+and 11, exactly as in the English file.*
+
+**The copy for this section is not in this file.** It is in `messages/pl.json`, under the
+same keys as the English, and it is on the page today. The English file explains why: a
+string that already ships gets one home, not two.
+
+**The button is called „Otwórz dziennik”.** The spec fixes the English wording and fixes
+nothing in Polish, and this is where that was open. „Zacznij dziennik” says start a new
+one, which is wrong for anyone coming back to theirs, and „Start” as a Polish verb is not
+Polish. What the link does is open the journal in the browser, so that is what it says.
+The imperative also keeps the reader ungendered, which rules out most of the alternatives
+before the meaning does. Lowercase „dziennik”, following the register the English file
+settled: the product is Gender Diary and the thing it holds is your journal.
+
+**Vocabulary in the channel notes.** „Wydanie” for a GitHub Release, „pakiet” for the
+Android package, „wersja deweloperska” for a debug build. None of these are product
+vocabulary, so none of them went into the table in `.agents/product-marketing.md`. The
+one entry that did is the button.
+
+**„Jeszcze niedostępne” is the status,** in the neuter, as a label rather than as
+agreement with a channel name. Aurora is feminine, Google Play and Obtainium behave as
+masculine, F-Droid likewise, and a status that has to agree with four different names is
+a status that eventually gets one of them wrong.
+
+**The Google Play note says what Play knows.** The marketing context asks for this
+sentence on the page rather than leaving a reader to work it out, and it is not a mark
+against Play so much as the one thing that differs between installing from a store and
+installing from a file.
+
+### Staged: the F-Droid signing warning
+
+*Gate: Journal ticket 18, same as the English block, published in both languages at once
+or in neither.*
+
+> Wersję z F-Droida podpisuje F-Droid, a Android nie zainstaluje jej na miejscu wersji
+> podpisanej przez kogoś innego. Przejście w którąkolwiek stronę wygląda tak: najpierw
+> zrób archiwum, potem odinstaluj aplikację, potem zainstaluj drugą wersję i wczytaj
+> archiwum z powrotem.
+
+---
+
 ## Source, licence and support
 
 ### Source
@@ -336,10 +379,6 @@ outside one here. Worth fixing over there.
 ---
 
 ## Notes for later tickets
-
-Ticket 06 owns Start journal and the channel list, in both languages. The Polish name of
-that button is open: the spec fixes the English wording, and nothing yet fixes what it
-says in Polish.
 
 Ticket 07 owns titles, descriptions and structured data. The Polish page needs its own,
 written as Polish, not as a translated title tag. The only claims available to mark up

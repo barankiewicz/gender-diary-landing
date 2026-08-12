@@ -4,6 +4,15 @@ import pl from '../../messages/pl.json';
 /** Placeholder until launch configuration is approved (spec, further notes). */
 export const SITE_ORIGIN = 'https://genderdiary.barankiewicz.dev';
 
+/** The production Journal, which has an origin of its own and shares nothing
+    with this one (ADR-0019 in the Journal repository). Provisional in the same
+    way as the origin above, and settled by that repository's ticket 01.
+
+    The trailing slash is deliberate and the whole URL is the point: Start
+    journal is a plain link to this and nothing else. No campaign parameter, no
+    referral identifier, and none of this site's language or theme state. */
+export const JOURNAL_URL = 'https://app.genderdiary.barankiewicz.dev/';
+
 export const LOCALES = ['en', 'pl'] as const;
 export type Locale = (typeof LOCALES)[number];
 
