@@ -1095,8 +1095,12 @@ for (const locale of ['en', 'pl']) {
     const { context, page } = await visitor({});
     try {
       await page.goto(`${base}/${locale}/`);
+      /* `section h2` rather than `section > h2` since ticket 17: the heading
+         moved into the sticky rail, so it is no longer a direct child of its
+         section. It is still the only h2 a section has, and still the words a
+         reader sees at the top of one. */
       const headings = await page
-        .locator('main section > h2')
+        .locator('main section h2')
         .evaluateAll((found) => found.map((h) => h.textContent.trim()));
       assert.deepEqual(headings, sectionHeadings(locale));
 
