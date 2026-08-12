@@ -24,6 +24,7 @@ const CONTENT_TYPES = {
   '.js': 'text/javascript',
   '.css': 'text/css',
   '.json': 'application/json',
+  '.png': 'image/png',
 };
 
 /* Serves the built directory the way the managed host will: a directory URL

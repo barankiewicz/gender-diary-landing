@@ -65,7 +65,7 @@ than only as a response header, because managed hosting can ignore an
 meta element cannot carry: the referrer policy as a real header, and a refusal
 to be framed. What the live site actually sends has to be read off it:
 
-    curl -sSI https://genderdiary.barankiewicz.dev/
+    curl -sSI https://gender-diary.barankiewicz.dev/
 
 ## License
 

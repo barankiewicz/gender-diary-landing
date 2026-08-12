@@ -8,6 +8,8 @@
     defaultPathFor,
     messages,
     pathFor,
+    socialTags,
+    structuredDataScript,
     type Locale,
     type Page,
   } from '$lib/site';
@@ -20,6 +22,8 @@
   }: { locale: Locale; page: Page; title: string; children: Snippet } = $props();
 
   const m = $derived(messages[locale]);
+  const canonical = $derived(SITE_ORIGIN + pathFor(locale, page));
+  const description = $derived(m.meta[page].description);
 
   /* Only a person choosing a language is remembered, which is why this is on
      the click and not on the page. Opening somebody else's link to /en/ is not
@@ -35,12 +39,51 @@
 </script>
 
 <svelte:head>
+  <!-- The title is the page's own name and stays that short deliberately.
+       It is the one piece of metadata a reader cannot avoid: it goes into a
+       browser history entry, a tab, a bookmark and the top line of a
+       preview, none of which they chose. So it says the product's name, or
+       on the privacy page that page's own heading, and it does not say what
+       kind of app this is. An SEO pass would want "a transition journal that
+       stays on your device" up here, where the words a person searches with
+       carry the most weight; that is the cost, and it is paid on purpose
+       (spec story 37). The description below carries those words instead,
+       because no browser ever puts a description in a history entry. -->
   <title>{title}</title>
-  <link rel="canonical" href={SITE_ORIGIN + pathFor(locale, page)} />
+  <meta name="description" content={description} />
+
+  <link rel="canonical" href={canonical} />
   {#each LOCALES as alternate (alternate)}
     <link rel="alternate" hreflang={alternate} href={SITE_ORIGIN + pathFor(alternate, page)} />
   {/each}
+  <!-- `defaultPathFor` explains why this is the English page rather than a
+       language gateway for every page: `/` asks a browser what it reads and
+       sends it on, and what it detects is a language, not a page. Ticket 07
+       revisited that and kept it. A per-page gateway would be a second
+       redirect for every page the site grows, and pointing a reader who
+       asked for the privacy page at `/` would answer them with the landing
+       page in a language they never picked. -->
   <link rel="alternate" hreflang="x-default" href={SITE_ORIGIN + defaultPathFor(page)} />
+
+  {#each Object.entries(socialTags({ locale, url: canonical, title, description })) as [property, content] (property)}
+    <meta {property} {content} />
+  {/each}
+  <!-- The one tag outside the Open Graph vocabulary, and it asks for a
+       layout rather than naming anybody: Twitter reads the og: tags above
+       for the words and the picture, and this says which of its two card
+       shapes to build. There is no site or creator handle here, because the
+       project has no account anywhere to name. -->
+  <meta name="twitter:card" content="summary_large_image" />
+
+  <!-- Structured data goes where the page describes the app, and only there.
+       The privacy page describes what the app does not do, which is not a
+       software listing; a breadcrumb would be markup for a trail this site
+       does not show a visitor. `structuredDataScript` carries the rest of the
+       reasoning, including what the vocabulary offers that this page will
+       not claim. -->
+  {#if page === 'landing'}
+    {@html structuredDataScript(locale)}
+  {/if}
 </svelte:head>
 
 <header class="controls">

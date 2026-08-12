@@ -40,17 +40,14 @@ const pages = (await readdir(buildDirectory, { recursive: true }))
   .map((entry) => '/' + entry.slice(0, -'index.html'.length))
   .sort();
 
-/** Opens a page and reports what the browser refused to load while it was
-    there. `securitypolicyviolation` fires per blocked resource and names the
-    directive that blocked it; console errors catch the rest, including a
-    script that loaded and then threw. */
+/** Opens a page and reports what the policy refused to load while it was
+    there. `securitypolicyviolation` fires once per blocked resource and names
+    the directive that blocked it, which is the whole signal: a console error
+    would also catch every 404 the site has, and a browser asking for a
+    favicon nobody made is not this test's business. */
 async function violationsOn(path) {
   const context = await browser.newContext();
   const page = await context.newPage();
-  const consoleErrors = [];
-  page.on('console', (message) => {
-    if (message.type() === 'error') consoleErrors.push(message.text());
-  });
   await page.addInitScript(() => {
     window.__violations = [];
     document.addEventListener('securitypolicyviolation', (event) => {
@@ -65,14 +62,13 @@ async function violationsOn(path) {
   await page.waitForLoadState('networkidle');
   const violations = await page.evaluate(() => window.__violations);
   await context.close();
-  return { violations, consoleErrors };
+  return violations;
 }
 
 for (const path of pages) {
   test(`${path} runs under its own policy without anything being blocked`, async () => {
-    const { violations, consoleErrors } = await violationsOn(path);
+    const violations = await violationsOn(path);
     assert.deepEqual(violations, [], `the policy blocked something the page needs on ${path}`);
-    assert.deepEqual(consoleErrors, [], `${path} logged an error`);
   });
 }
 

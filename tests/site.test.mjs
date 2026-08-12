@@ -14,7 +14,7 @@ import { copyBlocks, sentences } from './copy-source.mjs';
 /* The origin the built pages name in their canonical and alternate links. It
    is provisional (spec, further notes), and changing it should be a deliberate
    edit here as well as in src/lib/site.ts. */
-const SITE_ORIGIN = 'https://genderdiary.barankiewicz.dev';
+const SITE_ORIGIN = 'https://gender-diary.barankiewicz.dev';
 
 /* The production Journal, on the origin it has to itself. Provisional in the
    same way, and decided by the Journal repository's ticket 01. The exact
@@ -99,6 +99,99 @@ const acquisitionSection = (page, locale) =>
   page.locator('section').filter({
     has: page.getByRole('heading', { name: ACQUISITION[locale].heading }),
   });
+
+/** Presses Tab until the named control holds focus, and says whether it ever
+    did. Reaching a control this way is the claim - that somebody arriving by
+    keyboard alone gets there - which `.focus()` would assume rather than test.
+    Focus is dropped first so that each call means "reachable from the top of
+    the document" rather than "reachable from wherever the last one stopped".
+    The cap is a runaway guard, not a budget: the header has few stops. */
+async function tabTo(page, name, limit = 20) {
+  await page.evaluate(() => document.activeElement?.blur());
+  for (let i = 0; i < limit; i++) {
+    await page.keyboard.press('Tab');
+    const focused = await page.evaluate(() => document.activeElement?.textContent?.trim() || '');
+    if (focused === name) return true;
+  }
+  return false;
+}
+
+/** How far a page spills past the viewport sideways. Zero is the only passing
+    answer, and base.css deliberately declines to clip overflow at the body so
+    that this measurement can still see a layout that broke. */
+const sidewaysOverflow = (page) =>
+  page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+
+/** The contrast ratios the palette produces, read from the page rather than
+    from the stylesheet, so a token that moved is measured where it lands.
+    Also reports whether the two gradient-painted headings are still large
+    enough to be judged against the looser large-text bar. */
+async function contrastTokens(page) {
+  return page.evaluate(() => {
+    const root = getComputedStyle(document.documentElement);
+
+    /* Resolves any CSS colour to rgb by letting the browser do it. A token
+       that got renamed resolves to the empty string, which would silently
+       inherit some other colour and quietly pass, so it throws instead. */
+    const colorToRgb = (value) => {
+      if (!value) throw new Error('a colour token resolved to nothing; was one renamed?');
+      const probe = document.createElement('span');
+      probe.style.color = value;
+      document.body.append(probe);
+      const rgb = getComputedStyle(probe).color;
+      probe.remove();
+      const parts = rgb.match(/\d+(?:\.\d+)?/g).map(Number);
+      return [parts[0], parts[1], parts[2]];
+    };
+
+    const luminance = ([r, g, b]) => {
+      const channel = (n) => {
+        const v = n / 255;
+        return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
+      };
+      return 0.2126 * channel(r) + 0.7152 * channel(g) + 0.0722 * channel(b);
+    };
+
+    const ratio = (front, back) => {
+      const [bright, dark] = [luminance(front), luminance(back)].sort((a, b) => b - a);
+      return (bright + 0.05) / (dark + 0.05);
+    };
+
+    const token = (name) => root.getPropertyValue(name).trim();
+    const pageColor = colorToRgb(token('--page'));
+    const surface = colorToRgb(token('--surface'));
+    const ink = colorToRgb(token('--ink'));
+    const muted = colorToRgb(token('--muted'));
+    const inkOnAccent = colorToRgb(token('--ink-on-accent'));
+    const blue = colorToRgb(token('--blue'));
+    const pink = colorToRgb(token('--pink'));
+
+    const gradA = colorToRgb(token('--grad-a'));
+    const gradB = colorToRgb(token('--grad-b'));
+
+    /* The two headings painted through the gradient, and whether each one is
+       still big enough to be judged as WCAG large text. 24px at any weight,
+       or 18.66px once bold. */
+    const gradientText = ['main h1', '.headline'].map((selector) => {
+      const node = document.querySelector(selector);
+      const style = getComputedStyle(node);
+      const px = Number.parseFloat(style.fontSize);
+      const bold = Number.parseInt(style.fontWeight, 10) >= 700;
+      return { selector, px, bold, large: px >= 24 || (px >= 18.66 && bold) };
+    });
+
+    return {
+      inkOnPage: ratio(ink, pageColor),
+      mutedOnPage: ratio(muted, pageColor),
+      inkOnSurface: ratio(ink, surface),
+      accentTextOnBlue: ratio(inkOnAccent, blue),
+      accentTextOnPink: ratio(inkOnAccent, pink),
+      gradStartOnPage: ratio(gradA, pageColor),
+      gradEndOnPage: ratio(gradB, pageColor),
+      gradientText,
+    };
+  });
+}
 
 // Language: where a first visit lands
 
@@ -224,6 +317,14 @@ test('the theme control overrides the system theme and is remembered', async () 
 
     await page.reload();
     assert.equal(await themeNow(page), 'dark');
+    /* The theme is right before this line and the control catches up after it.
+       app.html stamps the theme before first paint; the button learns what it
+       is showing when the component mounts, which is after the dynamic imports
+       land, so reading aria-pressed as soon as reload returns is a race - the
+       same one the keyboard test above waits out, and the same fix. Ticket 11
+       lost it consistently by moving hydration about three milliseconds later,
+       which is the sort of margin this assertion was winning by. */
+    await page.waitForLoadState('networkidle');
     assert.equal(
       await page.getByRole('button', { name: 'Dark' }).getAttribute('aria-pressed'),
       'true',
@@ -451,16 +552,249 @@ for (const locale of ['en', 'pl']) {
       await page.setViewportSize({ width: 390, height: 844 });
       for (const suffix of Object.values(PAGE_PATHS)) {
         await page.goto(`${base}/${locale}/${suffix}`);
-        const overflow = await page.evaluate(
-          () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
-        );
-        assert.equal(overflow, 0, `/${locale}/${suffix} scrolls sideways at 390px`);
+        assert.equal(await sidewaysOverflow(page), 0, `/${locale}/${suffix} scrolls sideways at 390px`);
       }
     } finally {
       await context.close();
     }
   });
 }
+
+// Accessibility and keyboard use (ticket 10)
+
+for (const locale of ['en', 'pl']) {
+  test(`${locale}: keyboard can operate language and theme controls`, async () => {
+    const { context, page } = await visitor({ locale: locale === 'pl' ? 'pl-PL' : 'en-US' });
+    try {
+      await page.goto(`${base}/${locale}/`);
+      /* goto resolves on the load event, but the app hydrates through dynamic
+         imports that finish after it, and until they do the theme buttons are
+         on screen without their behaviour - app.html reveals them by setting
+         data-js, which happens long before the component is listening. Waiting
+         for the network to fall quiet waits for those imports. Without this the
+         Space below lands on an inert button roughly one run in seven. */
+      await page.waitForLoadState('networkidle');
+
+      const oppositeLanguage = locale === 'en' ? 'Polski' : 'English';
+      const expectedPath = locale === 'en' ? '/pl/' : '/en/';
+      const darkLabel = locale === 'en' ? 'Dark' : 'Ciemny';
+
+      /* The theme control goes first, on the page as it was loaded. Switching
+         language is a full document load, and pressing a theme button on the
+         far side of one races the script that gives it its behaviour: the
+         button is on screen as soon as app.html sets data-js, but does not
+         answer until the component has hydrated. That race belongs to the
+         test, not to the person, so it is simply avoided here. */
+      assert.ok(await tabTo(page, darkLabel), `Tab never reached the theme button: ${darkLabel}`);
+
+      const ring = await page.evaluate(() => {
+        const style = getComputedStyle(document.activeElement);
+        return { width: Number.parseFloat(style.outlineWidth), line: style.outlineStyle };
+      });
+      assert.ok(ring.width >= 1 && ring.line !== 'none', 'focused control had no visible focus ring');
+
+      await page.keyboard.press('Space');
+      assert.equal(await themeNow(page), 'dark', 'Space on the dark button did not apply dark');
+
+      // Then the language link, whose whole point is that it navigates.
+      assert.ok(await tabTo(page, oppositeLanguage), `Tab never reached: ${oppositeLanguage}`);
+      await page.keyboard.press('Enter');
+      await page.waitForURL(`${base}${expectedPath}`);
+    } finally {
+      await context.close();
+    }
+  });
+
+  test(`${locale}: landmarks and control names are meaningful to assistive tech`, async () => {
+    const { context, page } = await visitor({ locale: locale === 'pl' ? 'pl-PL' : 'en-US' });
+    try {
+      await page.goto(`${base}/${locale}/`);
+      /* Asked for by role and by name throughout, because that is the page as
+         a screen reader receives it. A <header> that drifted inside a section
+         would stop being a banner while still being a <header>, and querying
+         the tag would keep passing; asking for the banner role does not. */
+      const languageLabel = locale === 'en' ? 'Language' : 'Język';
+      const themeLabel = locale === 'en' ? 'Theme' : 'Motyw';
+
+      await page.getByRole('banner').waitFor();
+      await page.getByRole('main').waitFor();
+
+      assert.equal(
+        await page.getByRole('navigation', { name: languageLabel }).count(),
+        1,
+        `no navigation region announces itself as ${languageLabel}`,
+      );
+      assert.equal(
+        await page.getByRole('heading', { level: 1, name: 'Gender Diary' }).count(),
+        1,
+        'the page opens without a level-one heading a reader can land on',
+      );
+
+      // Both languages are offered by name, in their own language, on every page.
+      for (const name of ['English', 'Polski']) {
+        assert.equal(
+          await page.getByRole('link', { name, exact: true }).count(),
+          1,
+          `no link offers the ${name} version by name`,
+        );
+      }
+
+      /* The theme buttons are a named group so a reader meets them as one
+         control rather than three loose buttons. */
+      const themeGroup = page.getByRole('group', { name: themeLabel });
+      assert.equal(await themeGroup.count(), 1, `the theme buttons are not grouped as ${themeLabel}`);
+
+      for (const label of locale === 'en' ? ['System', 'Light', 'Dark'] : ['Systemowy', 'Jasny', 'Ciemny']) {
+        assert.equal(
+          await themeGroup.getByRole('button', { name: label, exact: true }).count(),
+          1,
+          `the theme group offers no button named ${label}`,
+        );
+      }
+    } finally {
+      await context.close();
+    }
+  });
+}
+
+/* Contrast is a property of the palette, not of the viewport: enlarging text
+   cannot change what --ink over --page resolves to. So the ratios are checked
+   once per theme, and the thing that enlarging text really does endanger -
+   the layout - is checked separately below. */
+for (const scheme of ['light', 'dark']) {
+  test(`${scheme}: text holds its contrast against the surfaces behind it`, async () => {
+    const { context, page } = await visitor({ colorScheme: scheme });
+    try {
+      await page.goto(`${base}/en/`);
+      /* Read back the theme the cascade actually settled on. Without this the
+         dark run would still pass having measured the light palette. */
+      assert.equal(await themeNow(page), scheme, `asked for ${scheme} and got the other palette`);
+
+      const ratios = await contrastTokens(page);
+      assert.ok(ratios.inkOnPage >= 4.5, `ink/page contrast too low: ${ratios.inkOnPage.toFixed(2)}`);
+      assert.ok(
+        ratios.mutedOnPage >= 4.5,
+        `muted/page contrast too low: ${ratios.mutedOnPage.toFixed(2)}`,
+      );
+      assert.ok(
+        ratios.inkOnSurface >= 4.5,
+        `ink/surface contrast too low: ${ratios.inkOnSurface.toFixed(2)}`,
+      );
+      assert.ok(
+        ratios.accentTextOnBlue >= 4.5,
+        `accent text/blue contrast too low: ${ratios.accentTextOnBlue.toFixed(2)}`,
+      );
+      assert.ok(
+        ratios.accentTextOnPink >= 4.5,
+        `accent text/pink contrast too low: ${ratios.accentTextOnPink.toFixed(2)}`,
+      );
+
+      /* The hero heading and the h1 are painted in the gradient itself rather
+         than in --ink, so they answer to --grad-a and --grad-b and to the 3:1
+         bar WCAG allows large text. The size is asserted first: the lower bar
+         is earned by being display-sized, and a heading shrunk back under it
+         would otherwise keep passing on a threshold it no longer qualifies
+         for. In light these endpoints sit at 4.16 and 4.32, deliberately
+         deepened for this - see the token comment in base.css. */
+      for (const heading of ratios.gradientText) {
+        assert.ok(
+          heading.large,
+          `${heading.selector} is ${heading.px}px${heading.bold ? ' bold' : ''}, too small for the large-text contrast bar`,
+        );
+      }
+      assert.ok(
+        ratios.gradStartOnPage >= 3,
+        `gradient start/page contrast too low: ${ratios.gradStartOnPage.toFixed(2)}`,
+      );
+      assert.ok(
+        ratios.gradEndOnPage >= 3,
+        `gradient end/page contrast too low: ${ratios.gradEndOnPage.toFixed(2)}`,
+      );
+    } finally {
+      await context.close();
+    }
+  });
+}
+
+/* Somebody who doubles the text size is the reason the layout is built in
+   relative units, and a layout pinned in pixels answers by pushing the page
+   sideways. Run at 390px rather than at the default desktop width: a wide
+   viewport absorbs the extra text and the check passes on slack instead of
+   on merit - at 1280px this same page survives 400%. The phone is where the
+   two pressures meet. Polish runs too, because it is the longer text. */
+for (const locale of ['en', 'pl']) {
+  test(`${locale}: doubling the text size does not push a phone page sideways`, async () => {
+    const { context, page } = await visitor({});
+    try {
+      await page.setViewportSize({ width: 390, height: 844 });
+      for (const suffix of Object.values(PAGE_PATHS)) {
+        await page.goto(`${base}/${locale}/${suffix}`);
+        await page.evaluate(() => {
+          document.documentElement.style.fontSize = '200%';
+        });
+        assert.equal(
+          await sidewaysOverflow(page),
+          0,
+          `/${locale}/${suffix} scrolls sideways at 200% text size on a 390px screen`,
+        );
+      }
+    } finally {
+      await context.close();
+    }
+  });
+}
+
+test('reduced motion disables the moving parts rather than shortening them', async () => {
+  const { context, page } = await visitor({});
+  try {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await page.goto(`${base}/en/`);
+
+    /* Motion is only observable as computed style, so this test reads style
+       where the others read behaviour. What it asks for is still addressed by
+       role and name wherever a role exists; the aurora blob is decorative and
+       has no accessible name to ask for, so it stays a class. */
+    const heading = page.getByRole('heading', { level: 1, name: 'Gender Diary' });
+    const action = page.getByRole('link', { name: ACQUISITION.en.action }).first();
+    const channel = page.getByRole('link', { name: CHANNELS[0], exact: true }).first();
+
+    const animationOf = (locator) =>
+      locator.evaluate((node) => getComputedStyle(node).animationName);
+    const transitionOf = (locator) =>
+      locator.evaluate((node) => getComputedStyle(node).transitionProperty);
+
+    const reduced = {
+      hero: await animationOf(heading),
+      blob: await page.locator('.blob-a').evaluate((node) => getComputedStyle(node).animationName),
+      ctaTransition: await transitionOf(action),
+      badgeTransition: await transitionOf(channel),
+    };
+
+    assert.equal(reduced.hero, 'none', 'hero heading still runs rise or shimmer with reduced motion');
+    assert.equal(reduced.blob, 'none', 'aurora blob still animates with reduced motion');
+    assert.ok(
+      !reduced.ctaTransition.includes('transform'),
+      'CTA still transitions transform with reduced motion',
+    );
+    assert.ok(
+      !reduced.badgeTransition.includes('transform'),
+      'badge still transitions transform with reduced motion',
+    );
+
+    await page.emulateMedia({ reducedMotion: 'no-preference' });
+    await page.reload();
+    const animated = await page.evaluate(() => ({
+      hero: getComputedStyle(document.querySelector('main h1')).animationName,
+      blob: getComputedStyle(document.querySelector('.blob-a')).animationName,
+    }));
+
+    assert.ok(animated.hero.includes('rise'), 'hero entrance did not return with motion allowed');
+    assert.ok(animated.hero.includes('shimmer'), 'hero shimmer did not return with motion allowed');
+    assert.ok(animated.blob.includes('drift-a'), 'aurora drift did not return with motion allowed');
+  } finally {
+    await context.close();
+  }
+});
 
 // Without scripting
 
@@ -881,6 +1215,277 @@ test('the two languages gate the same blocks in the same order', () => {
       gates('en'),
       `content/pl/${name}.md and content/en/${name}.md do not match block for block`,
     );
+  }
+});
+
+// The head: a search result, a history entry, a link preview (ticket 07)
+
+/* Every URL the site serves as a page, including the language gateway, which
+   is a page for exactly this purpose: it is what a preview is built from when
+   somebody pastes the origin. Written out rather than derived, like the paths
+   above, so that a page arriving without metadata fails here by name. */
+const HEAD_PAGES = ['/', '/en/', '/pl/', '/en/privacy/', '/pl/privacy/'];
+
+/** The title of each page, character for character. These are short on
+    purpose and ticket 07 settled that they stay short: a title is the one
+    piece of metadata a reader did not ask for, since it lands in their
+    history, their tabs, their bookmarks and the first line of any preview.
+    So it carries the product's name, and on the privacy page that page's own
+    heading, and nothing about what kind of app this is. */
+const TITLES = {
+  '/': 'Gender Diary',
+  '/en/': 'Gender Diary',
+  '/pl/': 'Gender Diary',
+  '/en/privacy/': PRIVACY_TITLE.en,
+  '/pl/privacy/': PRIVACY_TITLE.pl,
+};
+
+/** The description of each page, character for character. This is where the
+    words a person searches with live, because a description is shown in a
+    search result and in a preview a sender chose to send, and never in a
+    history entry. The gateway carries the English landing page's, which is
+    the page a visitor asking for neither language is about to be sent to. */
+const DESCRIPTIONS = {
+  '/en/':
+    'A diary for tracking gender transition. An entry holds a mood, a note, tags, photos and your own scales. It stays on your device, and there is no account.',
+  '/pl/':
+    'Dziennik tranzycji. We wpisie mieści się nastrój, notatka, tagi, zdjęcia i skale, które nazywasz po swojemu. Zostaje na twoim urządzeniu, konta nie zakładasz.',
+  '/en/privacy/':
+    'Where your journal is, what app lock does and does not do, what is not encrypted yet, and what a web host can see.',
+  '/pl/privacy/':
+    'Gdzie jest twój dziennik, co daje blokada aplikacji i czego nie daje, czego aplikacja jeszcze nie szyfruje i co widzi serwer WWW.',
+};
+DESCRIPTIONS['/'] = DESCRIPTIONS['/en/'];
+
+/** What a title may not say, in either language. Spec story 37: reading about
+    this product should not announce itself in a browser history. The name is
+    the name and the URL says it too, so the claim is not that a title hides
+    anything; it is that a title adds nothing the name already gives away. The
+    words below are what an SEO pass would put in a title and what this site
+    puts in a description instead. */
+const NOT_IN_A_TITLE = [
+  /* "trans" covers "transition" as well, and "tranzycj" is here because the
+     Polish word does not start with it. */
+  'trans',
+  'tranzycj',
+  'journal',
+  'dziennik',
+  'mood',
+  'nastrój',
+  'hrt',
+  'hormon',
+  'queer',
+  'lgbt',
+];
+
+/** The social card, as src/lib/site.ts declares it. Written out a second time
+    for the reason SITE_ORIGIN is: a test that imported the declaration would
+    agree with a wrong one. The picture is local, and the size is asserted
+    against the file rather than taken from the tags. */
+const SOCIAL_CARD = { url: `${SITE_ORIGIN}/social-card.png`, width: 1200, height: 630 };
+
+/** Keys and values structured data on this site may never contain, whatever
+    the schema vocabulary offers. There is no rating, no offer, no price, no
+    review and no count of anything, so a machine-readable listing that
+    carried one would be an invention in the format most likely to be
+    believed. `author` and `publisher` are here too: the site names nobody,
+    which is its own decision about its author and not an oversight. */
+const NOT_IN_STRUCTURED_DATA = [
+  'rating',
+  'review',
+  'offer',
+  'price',
+  'aggregate',
+  'author',
+  'publisher',
+  'testimonial',
+  'interactioncount',
+  'downloadcount',
+  'installcount',
+];
+
+/** Every meta tag on a page, keyed by whichever of `property` and `name` it
+    used, so that og: tags and the plain description read the same way. */
+const metaTags = (page) =>
+  page.evaluate(() =>
+    Object.fromEntries(
+      [...document.querySelectorAll('meta[name], meta[property]')].map((tag) => [
+        tag.getAttribute('property') ?? tag.getAttribute('name'),
+        tag.getAttribute('content'),
+      ]),
+    ),
+  );
+
+test('every page has its own title and description, in the file as served', async () => {
+  /* Scripting off throughout this section: a search engine reading the file
+     and a chat client building a preview do not run scripts, and the gateway
+     would otherwise redirect out from under the assertions. */
+  const { context, page } = await visitor({ javaScriptEnabled: false });
+  try {
+    for (const path of HEAD_PAGES) {
+      await page.goto(base + path);
+      assert.equal(await page.title(), TITLES[path], `${path}: wrong title`);
+
+      const description = (await metaTags(page)).description;
+      assert.equal(description, DESCRIPTIONS[path], `${path}: wrong description`);
+      /* A search result shows about 160 characters and cuts the rest. The
+         ceiling is here so that an edit which overflows it is a failure with
+         the sentence in the message rather than a truncation somebody
+         notices in a live result. */
+      assert.ok(
+        description.length <= 160,
+        `${path}: the description is ${description.length} characters and a search result shows about 160`,
+      );
+    }
+  } finally {
+    await context.close();
+  }
+});
+
+test('no title says what kind of app this is', async () => {
+  const { context, page } = await visitor({ javaScriptEnabled: false });
+  try {
+    for (const path of HEAD_PAGES) {
+      await page.goto(base + path);
+      /* The product's name is allowed to be the product's name. What the
+         test looks at is everything else in the title. */
+      const beyondTheName = (await page.title()).replaceAll('Gender Diary', '').toLowerCase();
+      for (const word of NOT_IN_A_TITLE) {
+        assert.ok(
+          !beyondTheName.includes(word),
+          `${path}: the title says "${word}", which a browser history then says for the reader`,
+        );
+      }
+    }
+  } finally {
+    await context.close();
+  }
+});
+
+test('a shared link previews as this app, from a picture on this origin', async () => {
+  const { context, page } = await visitor({ javaScriptEnabled: false });
+  try {
+    for (const path of HEAD_PAGES) {
+      await page.goto(base + path);
+      const tags = await metaTags(page);
+      const locale = path.startsWith('/pl/') ? 'pl' : 'en';
+
+      assert.deepEqual(
+        {
+          type: tags['og:type'],
+          siteName: tags['og:site_name'],
+          title: tags['og:title'],
+          description: tags['og:description'],
+          url: tags['og:url'],
+          locale: tags['og:locale'],
+          alternate: tags['og:locale:alternate'],
+          image: tags['og:image'],
+          width: tags['og:image:width'],
+          height: tags['og:image:height'],
+          card: tags['twitter:card'],
+        },
+        {
+          type: 'website',
+          siteName: 'Gender Diary',
+          title: TITLES[path],
+          description: DESCRIPTIONS[path],
+          url: SITE_ORIGIN + path,
+          locale: locale === 'pl' ? 'pl_PL' : 'en_GB',
+          alternate: locale === 'pl' ? 'en_GB' : 'pl_PL',
+          image: SOCIAL_CARD.url,
+          width: String(SOCIAL_CARD.width),
+          height: String(SOCIAL_CARD.height),
+          card: 'summary_large_image',
+        },
+        `${path}: the preview a link builds is wrong`,
+      );
+
+      /* The alt text is the picture's, in the reader's language, and the
+         picture is on this origin. A card image from anywhere else would be
+         the site's first third-party resource. */
+      assert.ok(tags['og:image:alt']?.includes('Gender Diary'), `${path}: the card has no alt text`);
+      assert.ok(
+        tags['og:image'].startsWith(SITE_ORIGIN + '/'),
+        `${path}: the card image is not served from this origin`,
+      );
+    }
+  } finally {
+    await context.close();
+  }
+});
+
+test('the social card is a real picture of the size its tags claim', async () => {
+  const { context, page } = await visitor({});
+  try {
+    const response = await page.goto(`${base}/social-card.png`);
+    assert.equal(response.status(), 200, 'the social card is not in the build');
+    assert.equal(response.headers()['content-type'], 'image/png');
+
+    /* Decoded rather than measured from the file: og:image:width and
+       og:image:height are what a preview lays the card out with, and a
+       picture that is not that size is laid out wrong. */
+    await page.goto(`${base}/en/`);
+    const decoded = await page.evaluate(
+      (url) =>
+        new Promise((resolve, reject) => {
+          const image = new Image();
+          image.onload = () => resolve({ width: image.naturalWidth, height: image.naturalHeight });
+          image.onerror = () => reject(new Error('the social card did not decode as an image'));
+          image.src = url;
+        }),
+      `${base}/social-card.png`,
+    );
+    assert.deepEqual(decoded, { width: SOCIAL_CARD.width, height: SOCIAL_CARD.height });
+  } finally {
+    await context.close();
+  }
+});
+
+test('structured data describes the app, and claims nothing the page does not', async () => {
+  const { context, page } = await visitor({ javaScriptEnabled: false });
+  try {
+    for (const locale of ['en', 'pl']) {
+      await page.goto(`${base}/${locale}/`);
+      const blocks = await page
+        .locator('script[type="application/ld+json"]')
+        .evaluateAll((found) => found.map((script) => script.textContent));
+      assert.equal(blocks.length, 1, `/${locale}/: expected exactly one JSON-LD block`);
+
+      const data = JSON.parse(blocks[0]);
+      /* Exhaustive on purpose: the assertion is as much about what is absent
+         as about what is here, and a property added without a sentence on the
+         page behind it fails this rather than passing a subset check. */
+      assert.deepEqual(data, {
+        '@context': 'https://schema.org',
+        '@type': 'WebApplication',
+        name: 'Gender Diary',
+        url: JOURNAL_URL,
+        description: DESCRIPTIONS[`/${locale}/`],
+        inLanguage: ['en', 'pl'],
+      });
+
+      /* Belt as well as braces, and the braces are the comparison above: a
+         property added anywhere in the block, at any depth, is read against
+         the list of what this site may not say about itself. */
+      const seen = JSON.stringify(data).toLowerCase();
+      for (const word of NOT_IN_STRUCTURED_DATA) {
+        assert.ok(!seen.includes(word), `/${locale}/: the structured data mentions "${word}"`);
+      }
+    }
+
+    /* The pages that describe no application carry no listing for one. The
+       privacy page says what the app does not do, and the gateway shows a
+       name and two links. */
+    for (const path of ['/', '/en/privacy/', '/pl/privacy/']) {
+      await page.goto(base + path);
+      assert.equal(
+        await page.locator('script[type="application/ld+json"]').count(),
+        0,
+        `${path}: this page describes no application, so it should carry no listing for one`,
+      );
+    }
+  } finally {
+    await context.close();
   }
 });
 
