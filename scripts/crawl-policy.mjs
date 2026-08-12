@@ -23,7 +23,7 @@ import { SITE_ORIGIN } from '../src/lib/site.ts';
 const production = process.env.SITE_ENV === 'production';
 const buildDirectory = fileURLToPath(new URL('../build', import.meta.url));
 
-const NOINDEX = '<head><meta name="robots" content="noindex">';
+const NOINDEX = '<meta name="robots" content="noindex">';
 
 /** Every page the built site actually has, as origin-relative paths: the
     directories adapter-static gave an index.html, which is every prerendered
@@ -38,10 +38,10 @@ for (const path of pages) {
   const file = `${buildDirectory}${path}index.html`;
   const html = await readFile(file, 'utf8');
   const flavoured = production
-    ? html.replace(NOINDEX, '<head>')
+    ? html.replace(`<head>${NOINDEX}`, '<head>')
     : html.includes(NOINDEX)
       ? html
-      : html.replace('<head>', NOINDEX);
+      : html.replace('<head>', `<head>${NOINDEX}`);
   if (flavoured !== html) await writeFile(file, flavoured);
 }
 

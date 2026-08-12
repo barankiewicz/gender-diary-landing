@@ -457,9 +457,10 @@ test('without scripting the page reads, in the system theme', async () => {
 
 // Crawl policy: what sits beside the pages (ticket 14)
 
-/* The page list, derived here a second time from the built files rather than
-   taken from the sitemap generator, so a stale sitemap or a generator that
-   skips a page fails a test instead of surfacing in a crawler. */
+/* The page list, derived a second time from the built files. The derivation
+   is the same shape the generator uses, so a bug in the shape itself would
+   pass both sides; what this catches is a sitemap gone stale, or a generator
+   that stopped running or skipped a page. */
 async function builtPagePaths() {
   const entries = await readdir(buildDirectory, { recursive: true });
   return entries
