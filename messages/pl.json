@@ -60,7 +60,7 @@
   "features": [
     {
       "group": "Zapisywanie",
-      "blocks": [
+      "paragraphs": [
         {
           "lead": "Wpisy.",
           "rest": " Nastrój w pięciu stopniach, notatka, tagi, zdjęcia i twoje skale. Kilka dziennie albo z datą wsteczną, do dnia, który przepadł."
@@ -81,7 +81,7 @@
     },
     {
       "group": "Przeglądanie",
-      "blocks": [
+      "paragraphs": [
         {
           "lead": "Miesiąc.",
           "rest": " Kalendarz w jednym kolorze o różnej sile, sterowany nastrojem albo wybraną skalą."
@@ -114,7 +114,7 @@
     },
     {
       "group": "Archiwa i eksport",
-      "blocks": [
+      "paragraphs": [
         {
           "lead": "Archiwa.",
           "rest": " Eksport pakuje dziennik do jednego pliku i szyfruje go hasłem, które wybierasz, zanim plik opuści aplikację. Import wkłada go z powrotem, dokładając do tego, co już jest, albo zastępując całość."
@@ -135,7 +135,7 @@
     },
     {
       "group": "Jeśli musisz uważać",
-      "blocks": [
+      "paragraphs": [
         "Wszystko w tej sekcji jest wyłączone, dopóki tego nie włączysz. Prowadzenie dziennika o własnym życiu to nic wstydliwego i aplikacja nie zachowuje się, jakby było inaczej. Te funkcje istnieją, bo bywają sytuacje naprawdę niebezpieczne, a czy twoja taka jest, wiesz tylko ty.",
         {
           "lead": "Blokada aplikacji.",
@@ -153,7 +153,7 @@
     },
     {
       "group": "Wygląd",
-      "blocks": [
+      "paragraphs": [
         {
           "lead": "Osiem palet",
           "rest": ": transpłciowa, niebinarna, genderfluid, biseksualna, lesbijska, panseksualna, agender i tęczowa. Każda przemalowuje całą aplikację, razem z wykresami i kalendarzem, i każda działa w jasnym i w ciemnym motywie."
@@ -209,14 +209,14 @@
     "sections": [
       {
         "heading": "Gdzie jest twój dziennik",
-        "blocks": [
+        "paragraphs": [
           "Twój dziennik jest zapisany na twoim urządzeniu. Nie ma konta Gender Diary, nie ma nigdzie serwera z kopią, nie ma niczego, co synchronizuje się w tle. Wpis ląduje w pamięci urządzenia, na którym powstał, i zostaje tam, dopóki go nie wyeksportujesz albo nie usuniesz.",
           "Serwera nie ma, więc nie ma serwera, do którego można się włamać, który można zająć nakazem albo sprzedać. Ufasz za to własnemu urządzeniu i każdemu, kto ma do niego dostęp."
         ]
       },
       {
         "heading": "Blokada aplikacji",
-        "blocks": [
+        "paragraphs": [
           "Blokada aplikacji jest wyłączona, dopóki jej nie włączysz, tak jak każda funkcja w Gender Diary, która coś ukrywa. Prowadzenie dziennika o własnym życiu to zwyczajna rzecz. Bywają sytuacje, w których i tak jest to niebezpieczne, a czy twoja taka jest, wiesz tylko ty.",
           {
             "lead": "Co robi.",
@@ -234,7 +234,7 @@
       },
       {
         "heading": "Szyfrowanie zapisanych danych",
-        "blocks": [
+        "paragraphs": [
           {
             "lead": "Dziennik nie jest jeszcze szyfrowany tam, gdzie jest zapisany.",
             "rest": " Blokada aplikacji ogranicza dostęp przez aplikację. Nie jest szyfrowaniem bazy, a kto skopiuje pliki z twojego urządzenia, przeczyta, co w nich jest. Szyfrowanie zapisanego dziennika powstaje i ta strona to napisze, wymieni, co obejmuje, i wymieni, czego nie obejmuje, kiedy test pokaże, że kopia zamkniętych plików niczego nie oddaje."
@@ -243,7 +243,7 @@
       },
       {
         "heading": "Archiwa",
-        "blocks": [
+        "paragraphs": [
           "Eksport pakuje dziennik do jednego pliku archiwum i szyfruje go hasłem, które wybierasz, zanim plik gdziekolwiek trafi. To hasło nie jest twoim PIN-em ani hasłem do dziennika. Chroni ten jeden plik.",
           {
             "lead": "Co archiwum zdradza.",
@@ -257,7 +257,7 @@
       },
       {
         "heading": "Co widzi serwer WWW",
-        "blocks": [
+        "paragraphs": [
           "Kiedy otwierasz aplikację w przeglądarce, prosisz o nią serwer WWW, a ten widzi adres IP, mniej więcej porę zapytania i to, że aplikacja została pobrana. Sprawdzenie, czy jest nowa wersja, to takie samo zapytanie. Tak działa każda strona, którą otwierasz, i ta też.",
           "Serwer WWW nie dostaje twojego dziennika. Wpisy, zdjęcia, notatki i wyniki badań nigdzie do niego nie idą, bo nie ma dokąd.",
           "Dlatego nie przeczytasz tutaj, że „Gender Diary nie wysyła żadnych zapytań sieciowych”, bo to nieprawda. Pobranie aplikacji jest zapytaniem sieciowym. Wyjście twojego dziennika na zewnątrz to co innego."
@@ -265,7 +265,7 @@
       },
       {
         "heading": "Czego to nie chroni",
-        "blocks": [
+        "paragraphs": [
           "Jeśli ktoś już panuje nad twoim urządzeniem, to nie te mechanizmy stoją między nim a twoim dziennikiem. Odblokowany telefon w cudzych rękach, przejęty system operacyjny albo otwarta aplikacja na ekranie leżą poza tym, co szyfrowanie zapisanych danych umie zrobić. Gender Diary tego nie obiecuje. Jeśli coś to obiecuje, nie wierz."
         ]
       }

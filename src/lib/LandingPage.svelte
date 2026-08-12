@@ -15,12 +15,12 @@
 
   <section>
     <h2>{m.sectionOverview}</h2>
-    <Prose blocks={m.overview} />
+    <Prose paragraphs={m.overview} />
   </section>
 
   <section>
     <h2>{m.sectionPrivacy}</h2>
-    <Prose blocks={m.privacyHandoff} />
+    <Prose paragraphs={m.privacyHandoff} />
     <!-- The link is the privacy page's own title, so the reader knows what
          they are opening before they open it. -->
     <p><a href={pathFor(locale, 'privacy')}>{m.privacyPage.title}</a></p>
@@ -51,7 +51,7 @@
            opens by saying that everything in it is off until you turn it on,
            and that sentence is only true of its own group. -->
       <h3>{group.group}</h3>
-      <Prose blocks={group.blocks} />
+      <Prose paragraphs={group.paragraphs} />
     {/each}
   </section>
 
@@ -83,6 +83,6 @@
 
   <section>
     <h2>{m.sectionSupport}</h2>
-    <Prose blocks={m.support} />
+    <Prose paragraphs={m.support} />
   </section>
 </PageShell>

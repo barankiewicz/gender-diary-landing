@@ -36,9 +36,12 @@ export function isLocale(value: unknown): value is Locale {
 /** The pages that exist in both languages. Each one is a location a person can
     be sent to and a search engine can index, which is why the language control
     switches page-for-page rather than dropping a reader who is halfway through
-    the privacy page back onto the landing page in their other language. */
-export const PAGES = ['landing', 'privacy'] as const;
-export type Page = (typeof PAGES)[number];
+    the privacy page back onto the landing page in their other language.
+
+    A union rather than a `LOCALES`-style array, because nothing iterates the
+    pages: routes are files on disk and the sitemap is generated from the built
+    directory. */
+export type Page = 'landing' | 'privacy';
 
 /** Trailing slash, so the managed host serves `<locale>/index.html` and the URL
     a person copies is the one the alternates and the canonical link name.

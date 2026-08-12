@@ -437,7 +437,7 @@ test('without scripting the page reads, in the system theme', async () => {
   try {
     await page.goto(`${base}/pl/`);
     assert.equal(await documentLanguage(page), 'pl');
-    assert.equal(await page.locator('main section').count(), SECTIONS.pl.length);
+    assert.equal(await page.locator('main section').count(), sectionHeadings('pl').length);
     assert.equal(await themeNow(page), 'dark', 'a dark system theme got a light page');
     assert.equal(
       await page.locator('.theme-control').isVisible(),
@@ -557,27 +557,33 @@ test('a production build is indexable, sitemap and robots in agreement', async (
 
 // The copy: what publishes, what stays staged, and what it says
 
-/** The landing page's sections, in the order a reader meets them. Written out
-    rather than counted, so that a section quietly disappearing fails here and
-    names itself. */
-const SECTIONS = {
-  en: [
-    'What Gender Diary is',
-    "What it protects, and what it doesn't",
-    'The screens',
-    'What it does',
-    'How to get it',
-    'Support',
-  ],
-  pl: [
-    'Czym jest Gender Diary',
-    'Co chroni, a czego nie',
-    'Ekrany',
-    'Co potrafi',
-    'Skąd je wziąć',
-    'Pomoc',
-  ],
+/** The landing page's section headings, by what the section is. Named rather
+    than positional, the way CHANNELS.indexOf is used above, so that inserting
+    a section does not silently retarget the locator that finds another one.
+    Acquisition keeps its heading in ACQUISITION, where it already was. */
+const HEADINGS = {
+  en: {
+    overview: 'What Gender Diary is',
+    privacy: "What it protects, and what it doesn't",
+    tour: 'The screens',
+    features: 'What it does',
+    acquisition: ACQUISITION.en.heading,
+    support: 'Support',
+  },
+  pl: {
+    overview: 'Czym jest Gender Diary',
+    privacy: 'Co chroni, a czego nie',
+    tour: 'Ekrany',
+    features: 'Co potrafi',
+    acquisition: ACQUISITION.pl.heading,
+    support: 'Pomoc',
+  },
 };
+
+/** The order a reader meets them in. Written out rather than counted, so that
+    a section quietly disappearing fails here and names itself. */
+const SECTION_ORDER = ['overview', 'privacy', 'tour', 'features', 'acquisition', 'support'];
+const sectionHeadings = (locale) => SECTION_ORDER.map((section) => HEADINGS[locale][section]);
 
 /** The privacy page's own title, which is also the text of the link the
     landing page offers to it. */
@@ -585,6 +591,19 @@ const PRIVACY_TITLE = {
   en: 'What Gender Diary protects, and what it does not',
   pl: 'Co Gender Diary chroni, a czego nie chroni',
 };
+
+/** The hero headline, which is the one piece of the overview copy that is not
+    inside a section and so is not covered by the heading assertions. */
+const HEADLINE = {
+  en: 'A transition journal that stays on your device.',
+  pl: 'Dziennik tranzycji, który zostaje na twoim urządzeniu.',
+};
+
+/** The opening of the at-rest encryption block the fallback stands in for.
+    Gated on Journal ticket 09 and asserted absent by name as well as by gate,
+    because this is the one sentence on the site whose early publication would
+    be a lie to somebody deciding what to trust. */
+const GATED_AT_REST = { en: 'What is covered.', pl: 'Co obejmuje.' };
 
 /** The wording that publishes in place of the at-rest encryption block, which
     is gated on Journal ticket 09 and its claim-gate test. Naming the sentence
@@ -620,6 +639,10 @@ const TOUR = {
   ],
 };
 
+/* The paths `pathFor` builds in src/lib/site.ts, written out a second time
+   here for the same reason SITE_ORIGIN and JOURNAL_URL are: a test that
+   imported the thing it is checking would agree with a wrong answer. Adding a
+   page means adding it in both places. */
 const PAGE_PATHS = { landing: '', privacy: 'privacy/' };
 
 /** Both pages of one language, as the words a visitor can read on them. */
@@ -649,16 +672,20 @@ for (const locale of ['en', 'pl']) {
       /* Sentence by sentence as well as whole paragraph, because a block that
          published half of itself published half of itself. The floor keeps a
          fragment too short to be distinctive from failing this on a collision
-         with unrelated copy. */
+         with unrelated copy, and the count afterwards is what stops the floor
+         swallowing a whole paragraph and reporting a pass. */
       for (const block of staged) {
         for (const paragraph of block.paragraphs) {
+          let checked = 0;
           for (const sentence of [paragraph, ...sentences(paragraph)]) {
             if (sentence.length < 20) continue;
+            checked++;
             assert.ok(
               !site.includes(sentence),
               `${block.name}: a sentence gated on "${block.marker.split('.')[0]}" is on the site: ${sentence}`,
             );
           }
+          assert.ok(checked > 0, `${block.name}: nothing was long enough to check in: ${paragraph}`);
         }
       }
     } finally {
@@ -667,7 +694,9 @@ for (const locale of ['en', 'pl']) {
   });
 
   test(`${locale}: every shipped block is on its page, word for word`, async () => {
-    const { context, page } = await visitor({});
+    /* Scripting off, so this is also the check that the copy is in the file a
+       visitor is served rather than something hydration puts there. */
+    const { context, page } = await visitor({ javaScriptEnabled: false });
     try {
       const text = await readSite(page, locale);
 
@@ -696,15 +725,11 @@ for (const locale of ['en', 'pl']) {
       const headings = await page
         .locator('main section > h2')
         .evaluateAll((found) => found.map((h) => h.textContent.trim()));
-      assert.deepEqual(headings, SECTIONS[locale]);
+      assert.deepEqual(headings, sectionHeadings(locale));
 
       assert.equal(await page.locator('main h1').innerText(), 'Gender Diary');
       assert.ok(
-        (await page.locator('main').innerText()).includes(
-          locale === 'en'
-            ? 'A transition journal that stays on your device.'
-            : 'Dziennik tranzycji, który zostaje na twoim urządzeniu.',
-        ),
+        (await page.locator('main').innerText()).includes(HEADLINE[locale]),
         'the hero headline is not on the page',
       );
     } finally {
@@ -717,7 +742,7 @@ for (const locale of ['en', 'pl']) {
     try {
       await page.goto(`${base}/${locale}/`);
       const tour = page.locator('section').filter({
-        has: page.getByRole('heading', { name: SECTIONS[locale][2] }),
+        has: page.getByRole('heading', { name: HEADINGS[locale].tour }),
       });
 
       const screens = await tour
@@ -782,7 +807,7 @@ for (const locale of ['en', 'pl']) {
          as by gate, because this is the one sentence on the site whose early
          publication would be a lie to somebody deciding what to trust. */
       assert.ok(
-        !text.includes(locale === 'en' ? 'What is covered.' : 'Co obejmuje.'),
+        !text.includes(GATED_AT_REST[locale]),
         'the gated at-rest encryption block reached the privacy page',
       );
     } finally {

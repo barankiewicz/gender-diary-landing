@@ -60,7 +60,7 @@
   "features": [
     {
       "group": "Writing it down",
-      "blocks": [
+      "paragraphs": [
         {
           "lead": "Entries.",
           "rest": " A mood on five levels, a note, tags, photos, and your scales. Several a day, or backdated to a day you missed."
@@ -81,7 +81,7 @@
     },
     {
       "group": "Reading it back",
-      "blocks": [
+      "paragraphs": [
         {
           "lead": "The month.",
           "rest": " A heat map in one colour, driven by mood or by a scale you pick."
@@ -114,7 +114,7 @@
     },
     {
       "group": "Keeping it",
-      "blocks": [
+      "paragraphs": [
         {
           "lead": "Archives.",
           "rest": " Export packs your journal into one file, encrypted with a password you choose, before it leaves the app. Import puts it back, either merged into what is here or replacing it."
@@ -135,7 +135,7 @@
     },
     {
       "group": "If you need to be careful",
-      "blocks": [
+      "paragraphs": [
         "Everything in this section is off until you turn it on. Keeping a journal about your own life is not something to be ashamed of, and the app does not behave as though it is. These exist because some people's circumstances are genuinely unsafe, and only you know whether that is yours.",
         {
           "lead": "App lock.",
@@ -153,7 +153,7 @@
     },
     {
       "group": "How it looks",
-      "blocks": [
+      "paragraphs": [
         {
           "lead": "Eight palettes",
           "rest": ", including trans, nonbinary, genderfluid, bisexual, lesbian, pansexual, agender and rainbow. Each one recolours the whole app, charts and calendar included, and each one works in light and dark."
@@ -209,14 +209,14 @@
     "sections": [
       {
         "heading": "Where your journal is",
-        "blocks": [
+        "paragraphs": [
           "Your journal is stored on your device. There is no Gender Diary account, no server with a copy of it on, and nothing syncing in the background. An entry you write goes into storage on the device you wrote it on and stays there until you export it or delete it.",
           "There is no server, so there is no server to be breached, subpoenaed or sold. What you are trusting instead is your own device and whoever else can reach it."
         ]
       },
       {
         "heading": "App lock",
-        "blocks": [
+        "paragraphs": [
           "App lock is off until you turn it on, like every control in Gender Diary that hides something. Keeping a journal about your own life is an ordinary thing to do. Some people's circumstances make it dangerous anyway, and only you know whether that is yours.",
           {
             "lead": "What it does.",
@@ -234,7 +234,7 @@
       },
       {
         "heading": "Encryption at rest",
-        "blocks": [
+        "paragraphs": [
           {
             "lead": "The journal is not encrypted where it is stored, yet.",
             "rest": " App lock limits access through the app. It is not encryption of the database, and somebody who can copy the files off your device can read what is in them. Encrypting the stored journal is being built, and this page will say so, name what it covers and name what it does not, once a test can show a copy of the closed files giving nothing up."
@@ -243,7 +243,7 @@
       },
       {
         "heading": "Archives",
-        "blocks": [
+        "paragraphs": [
           "Export packs your journal into a single Archive file, encrypted with a password you choose, before the file goes anywhere. That password is not your PIN and not your Journal passphrase. It protects that one file.",
           {
             "lead": "What an Archive gives away.",
@@ -257,7 +257,7 @@
       },
       {
         "heading": "What the web host can see",
-        "blocks": [
+        "paragraphs": [
           "Opening the app in a browser means asking a web host for it, and that host can see an IP address, roughly when the request happened, and that the app was fetched. Checking for a new version is the same kind of request. This is true of every website you open, and it is true of this one.",
           "What the host does not receive is your journal. Entries, photos, notes and lab values are not sent to it, because there is nowhere for them to be sent.",
           "You will not read \"Gender Diary makes no network requests\" here, because it is not true. Fetching the app is a network request. Your journal going somewhere is not."
@@ -265,7 +265,7 @@
       },
       {
         "heading": "What none of this protects against",
-        "blocks": [
+        "paragraphs": [
           "If somebody already controls your device, none of this is what stands between them and your journal. An unlocked phone in somebody else's hands, an operating system that has been compromised, or the app sitting open in front of them are all outside what encryption at rest can do. Gender Diary does not claim otherwise. Be wary of anything that does."
         ]
       }

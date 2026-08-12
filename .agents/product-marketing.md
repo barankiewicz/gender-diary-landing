@@ -399,6 +399,22 @@ nobody had written, in a language neither file supplies. Ticket 02 had already p
 of them in `messages/*.json` and this follows that, written as Polish rather than as a
 translation of the English column.
 
+The two pages needed different amounts of writing, and the difference is worth stating
+because it looks inconsistent otherwise. The privacy page's document headings are its
+section names, and ticket 05 wrote a Polish name for nearly all of them in that file's
+parity table, so both languages were already settled and this ticket wrote nothing. The
+landing page's document headings are organisation ("Product overview", "Visual tour",
+"Feature summary"), the register a spec uses rather than the one a page speaks in, and
+ticket 02 had already replaced the first of them with a page heading of its own. So the
+landing page is where headings had to be written, in both languages.
+
+**Landing page.** Five of the English headings are the copy file's own `###` text,
+unchanged: Writing it down, Reading it back, Keeping it, If you need to be careful, How
+it looks. Three are new English: The screens, What it does, Support. All eight Polish
+ones are new. None of the eight went through `copywriting` or `copy-editing`, which is a
+gap the content workflow would normally close, so they are flagged for that pass along
+with the Polish review below.
+
 | Section | English | Polish | Why not the obvious alternative |
 |---|---|---|---|
 | The visual tour | The screens | Ekrany | The document heading is "Visual tour", which is how a spec talks about a section rather than how a page introduces one. The section is eight screens, and „Ekrany” sits next to the app's own „Ekran główny” |
@@ -413,6 +429,19 @@ translation of the English column.
 None of the eight is product vocabulary, so none goes in the term table above. The
 Polish-speaking review that ticket 05 still owes covers these too: they were written by
 the ticket that rendered the pages, not by the ticket that wrote the Polish.
+
+**Privacy page.** Nothing was written here. The English is the copy file's own `###`
+text and every Polish heading already existed, which is worth recording so that the next
+person can check the provenance rather than take it on trust.
+
+| English | Polish | Where the Polish came from |
+|---|---|---|
+| Where your journal is | Gdzie jest twój dziennik | The parity table in `content/pl/privacy.md`, ticket 05 |
+| App lock | Blokada aplikacji | The shipped app's own Polish, and the term table above |
+| Encryption at rest | Szyfrowanie zapisanych danych | The term table above, ticket 05. The section keeps the heading while it carries the fallback: the block is about encryption at rest and says there is none yet |
+| Archives | Archiwa | `content/pl/landing.md`, the feature label |
+| What the web host can see | Co widzi serwer WWW | The parity table, ticket 05, built on „serwer WWW” from the term table |
+| What none of this protects against | Czego to nie chroni | The parity table, ticket 05 |
 
 **The source block cannot be published, and its gate half-says so.** `content/*/landing.md`
 marks it *Gate: shipped as far as the licence goes*, then names a condition that has not
@@ -527,7 +556,7 @@ this site to repeat them.
 
 *Newest first. One line per revision: what changed and why.*
 
-- v8 (2026-08-12) - Recorded the eight section headings ticket 13 had to write, in both languages, because the copy files organise themselves with English headings that are commentary rather than copy. Recorded that the source block cannot be published: its gate says shipped as far as the licence goes, and the Journal repository it tells people to go and read is private, so the site currently states no licence.
+- v8 (2026-08-12) - Recorded the section headings ticket 13 needed, because the copy files organise themselves with English headings that are commentary rather than copy. Eight had to be written for the landing page and none for the privacy page, where ticket 05's parity table had already settled the Polish; both tables now say which is which and where each string came from. Flagged the eight as not having been through copywriting or copy-editing. Recorded that the source block cannot be published: its gate says shipped as far as the licence goes, and the Journal repository it tells people to go and read is private, so the site currently states no licence.
 - v7 (2026-08-12) - The project speaks as one person, in the first person singular, and does not name that person or state that they are trans. Reversed the channel-equality rule: Google Play is listed last and the page says why, because even-handedness between one channel that reports an install to Google and three that do not was a policy the reader had no use for. Added five style rules the old list did not catch, all of them ways this copy sounded institutional rather than promotional: no talking about the copy on the copy, no epigram per paragraph, no coyness about the word gender, no neutrality the reader has no use for, no tutorials.
 - v6 (2026-08-12) - Start journal is „Otwórz dziennik” in Polish, decided by ticket 06 and reasoned in the term table. The version line above said v4 while this list was already on v5, so it now says what the list says.
 - v5 (2026-08-12) - Recorded the eight Polish terms ticket 05 had to coin, the two places the Polish site deliberately overrides `humanizer-pl`, and the note that Start journal still has no Polish name. „Archiwum” is the one term that deviates from shipped Polish, which the row says out loud.

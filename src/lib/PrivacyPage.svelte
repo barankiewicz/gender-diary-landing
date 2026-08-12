@@ -5,7 +5,7 @@
 
   let { locale }: { locale: Locale } = $props();
 
-  const p = $derived(messages[locale].privacyPage);
+  const privacy = $derived(messages[locale].privacyPage);
 </script>
 
 <!-- What is missing from this page is the point of it. The encryption-at-rest
@@ -15,14 +15,14 @@
      is stored, yet. Swapping the two is a copy ticket's job once the gate
      passes, and tests/site.test.mjs fails if the gated block turns up here
      first. -->
-<PageShell {locale} page="privacy" title={p.title}>
-  <h1>{p.title}</h1>
-  <p>{p.intro}</p>
+<PageShell {locale} page="privacy" title={privacy.title}>
+  <h1>{privacy.title}</h1>
+  <p>{privacy.intro}</p>
 
-  {#each p.sections as section (section.heading)}
+  {#each privacy.sections as section (section.heading)}
     <section>
       <h2>{section.heading}</h2>
-      <Prose blocks={section.blocks} />
+      <Prose paragraphs={section.paragraphs} />
     </section>
   {/each}
 </PageShell>

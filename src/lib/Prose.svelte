@@ -1,13 +1,13 @@
 <script lang="ts">
   import type { Paragraph } from '$lib/site';
 
-  let { blocks }: { blocks: readonly Paragraph[] } = $props();
+  let { paragraphs }: { paragraphs: readonly Paragraph[] } = $props();
 </script>
 
 <!-- `rest` starts with its own separator, so nothing goes between the two
      halves here. A space added on this line would show up as "Eight palettes ,
      including" on the page and as a reworded sentence in the copy tests. -->
-{#each blocks as paragraph, index (index)}
+{#each paragraphs as paragraph, index (index)}
   {#if typeof paragraph === 'string'}
     <p>{paragraph}</p>
   {:else}
