@@ -6,7 +6,7 @@
    Run with `npm test`, which builds first. */
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { readdir } from 'node:fs/promises';
+import { readdir, readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { createReporter, launchChromium, serveBuild } from './browser-harness.mjs';
 import { copyBlocks, sentences } from './copy-source.mjs';
@@ -1095,8 +1095,12 @@ for (const locale of ['en', 'pl']) {
     const { context, page } = await visitor({});
     try {
       await page.goto(`${base}/${locale}/`);
+      /* `section h2` rather than `section > h2` since ticket 17: the heading
+         moved into the sticky rail, so it is no longer a direct child of its
+         section. It is still the only h2 a section has, and still the words a
+         reader sees at the top of one. */
       const headings = await page
-        .locator('main section > h2')
+        .locator('main section h2')
         .evaluateAll((found) => found.map((h) => h.textContent.trim()));
       assert.deepEqual(headings, sectionHeadings(locale));
 
@@ -1486,6 +1490,632 @@ test('structured data describes the app, and claims nothing the page does not', 
     }
   } finally {
     await context.close();
+  }
+});
+
+// The scrim: what a word is actually painted on (ticket 17)
+
+/* The aura used to be an ornament inside the hero, so every paragraph on the
+   page sat on --page and the token ratios above were the whole story. It is a
+   page-wide fixed layer now, which means a paragraph sits on --page plus
+   whatever has drifted behind it, and a test that reads the palette cannot see
+   that. This one reads the page.
+
+   Every string is painted transparent, the viewport is photographed, and the
+   pixels where the text was are measured against the colour that text is
+   really painted in. What comes back is the actual background behind every
+   word, scrim and aura and card tint included.
+
+   The decode happens on about:blank rather than on the site, because the
+   screenshot arrives as a data: URL and this site's own policy is
+   img-src 'self'. That is the policy working, not a problem with it. */
+
+/** The elements a reader reads. Asked for by tag rather than by role, because
+    the question is the same for a heading and for a list item - what colour is
+    behind this ink - and it has to be asked of every string on the page rather
+    than of the named ones. */
+const SCRIM_PROBE = 'main h2, main h3, main p, main li, main a, main strong, main span';
+
+/** WCAG's bar for the size the text actually is: 3:1 once it is large, 4.5:1
+    otherwise. Large is 24px at any weight, or 18.66px once bold. */
+const contrastFloor = ({ px, bold }) => (px >= 24 || (px >= 18.66 && bold) ? 3 : 4.5);
+
+/** Where the aura is parked for a given pass. The three blobs run on 19, 23
+    and 27 second loops, so these offsets land them in a different arrangement
+    every time rather than sampling one instant of a moving layer. */
+const DRIFT_PHASES = [0, 5, 11, 17];
+
+/** Waits for the page to be laid out and painted again. Two frames rather
+    than one: the first lets a style change take effect, the second lets the
+    compositor hand back something stable to measure or photograph. */
+const nextFrame = (page) =>
+  page.evaluate(
+    () => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))),
+  );
+
+/** A page on about:blank whose only job is to decode screenshots and read
+    pixels out of them. */
+async function pixelDecoder() {
+  const context = await browser.newContext();
+  const page = await context.newPage();
+  await page.goto('about:blank');
+  return { page, close: () => context.close() };
+}
+
+/** Walks a page from top to bottom a screen at a time and reports every text
+    element whose contrast against its own background falls under the bar. */
+async function scrimFailures(page, decoder) {
+  /* The hero's entrance runs for 0.8s behind a delay of up to 0.36s, and it
+     animates opacity. Measuring through it reads a half-faded control against
+     the page and calls that a contrast failure, which photographs the page
+     arriving rather than the page.
+
+     Only the clock-driven animations are waited on. A scroll-driven one is
+     finished when the reader has scrolled past it and not before, so awaiting
+     those hangs until the timeout: they are excluded by their timeline rather
+     than by their duration. They need no wait anyway, because at a fixed
+     scroll position they resolve to the same frame every time. */
+  await page.evaluate(
+    () =>
+      new Promise((resolve) => {
+        const onClock = document
+          .getAnimations()
+          .filter((animation) => animation.timeline === document.timeline)
+          .filter((animation) => animation.effect?.getTiming().iterations !== Infinity);
+        Promise.allSettled(onClock.map((animation) => animation.finished)).then(resolve);
+      }),
+  );
+
+  const viewport = page.viewportSize();
+  const documentHeight = await page.evaluate(() => document.documentElement.scrollHeight);
+  const step = Math.round(viewport.height * 0.85);
+  const failures = [];
+
+  for (let pass = 0, top = 0; top < documentHeight; pass++, top += step) {
+    await page.evaluate((y) => window.scrollTo(0, y), top);
+    /* Style attributes rather than an injected stylesheet, throughout this
+       function. The site's policy is style-src 'self', so a stylesheet added
+       from here is blocked - correctly, and tests/policy.test.mjs is what
+       keeps it that way. Attributes are the one loosening the policy makes,
+       for ticket 09's staggered entrance, and they are enough here. */
+    await page.evaluate((phase) => {
+      for (const blob of document.querySelectorAll('.blob')) {
+        blob.style.animationDelay = `-${phase}s`;
+      }
+      /* The reveals come off entirely rather than being paused, because what
+         is being measured is the page a person reads and a reveal is a thing
+         that happens on the way to it. Frozen half way through, a reveal is
+         a section at 40% opacity washed out toward the page colour, and the
+         measurement then reports a contrast failure about a frame nobody
+         reads. Removing the animation leaves each element in its own settled
+         state, which is what `.reveal` styles as: the motion only ever takes
+         it away and gives it back.
+
+         It also fixes the rectangles. A scrubbed reveal moves its element by
+         up to 1.5rem, so measuring on one frame and photographing on the next
+         samples a point that has since slid onto the next paragraph. */
+      for (const node of document.querySelectorAll('main, main *')) {
+        node.style.animationName = 'none';
+      }
+    }, DRIFT_PHASES[pass % DRIFT_PHASES.length]);
+    await nextFrame(page);
+
+    /* The measurements are taken before the ink is hidden, so each probe
+       carries the colour the text is really painted in. */
+    const probes = await page.evaluate((selector) => {
+      const found = [];
+      /* The header is sticky, so the top band of the viewport belongs to it
+         and not to whatever has scrolled underneath. Clamping a probe to the
+         viewport without clamping it to this instead samples the header's own
+         text, which is ink on ink and reports 1.00 for a paragraph that is
+         perfectly readable where a reader actually reads it. */
+      const header = document.querySelector('header').getBoundingClientRect().bottom;
+      for (const node of document.querySelectorAll(selector)) {
+        /* Only elements holding text of their own. A <section> wrapping three
+           paragraphs would otherwise be measured across its whole area,
+           including the gaps between them. */
+        const ownText = [...node.childNodes].some(
+          (child) => child.nodeType === 3 && child.textContent.trim(),
+        );
+        if (!ownText) continue;
+
+        const rect = node.getBoundingClientRect();
+        if (rect.width < 8 || rect.height < 8) continue;
+        if (rect.bottom <= header || rect.top >= window.innerHeight) continue;
+
+        const style = getComputedStyle(node);
+        /* The two gradient-clipped headings paint no ink of their own. The
+           token test above is what covers those, against the 3:1 bar their
+           display size earns them. */
+        if (/,\s*0\)$/.test(style.color)) continue;
+
+        /* An element's own borders are not the background behind its text,
+           and several here are a flag colour: `.more` hangs from a 2px pink
+           rule and the support warning stands on a 3px one. Sampling those
+           measures ink against a border and reports 2.09 for a link that
+           reads perfectly. */
+        const edge = (side) => Number.parseFloat(style[`border${side}Width`]) + 1;
+        const x = Math.max(0, rect.x) + edge('Left');
+        const y = Math.max(header, rect.y) + edge('Top');
+        const box = {
+          x,
+          y,
+          w: Math.min(rect.right, window.innerWidth) - x - edge('Right'),
+          h: Math.min(rect.bottom, window.innerHeight) - y - edge('Bottom'),
+        };
+        /* What is left after the header band and the borders have been taken
+           off has to still be a box. An element sliding under the sticky
+           header leaves a sliver, and a sliver of negative height samples
+           points above its own top edge, which is how a link came to be
+           measured against its own underline. */
+        if (box.w < 8 || box.h < 8) continue;
+
+        found.push({
+          color: style.color,
+          px: Number.parseFloat(style.fontSize),
+          bold: Number.parseInt(style.fontWeight, 10) >= 700,
+          what: `${node.tagName.toLowerCase()}: ${node.textContent.trim().slice(0, 40)}`,
+          rect: box,
+        });
+      }
+      return found;
+    }, SCRIM_PROBE);
+
+    if (probes.length === 0) continue;
+
+    /* The ink comes off so the camera sees only what is behind it, and goes
+       back on straight afterwards so the next pass can read the colours
+       again. Nothing on this site carries an inline colour of its own, so
+       clearing the property restores the stylesheet's. */
+    const paintText = (visible) =>
+      page.evaluate((show) => {
+        for (const node of document.querySelectorAll('main *')) {
+          node.style.color = show ? '' : 'transparent';
+          node.style.webkitTextFillColor = show ? '' : 'transparent';
+        }
+      }, visible);
+
+    await paintText(false);
+    /* The screenshot does not wait for a frame of its own, so without this the
+       camera catches the page as it was, every sample lands on a letter, and
+       the measurement quietly reports the ink's contrast against itself. The
+       check below is what stops that failing silently if it comes back. */
+    await nextFrame(page);
+    const stillPainted = await page.evaluate(() =>
+      [...document.querySelectorAll('main *')].filter(
+        (node) => !/,\s*0\)$/.test(getComputedStyle(node).color),
+      ).length,
+    );
+    assert.equal(stillPainted, 0, 'the ink did not come off before the screenshot');
+
+    const shot = (await page.screenshot()).toString('base64');
+    await paintText(true);
+
+    const measured = await decoder.evaluate(async ({ shot, probes }) => {
+      const image = new Image();
+      image.src = `data:image/png;base64,${shot}`;
+      await image.decode();
+
+      const canvas = document.createElement('canvas');
+      canvas.width = image.naturalWidth;
+      canvas.height = image.naturalHeight;
+      const context = canvas.getContext('2d', { willReadFrequently: true });
+      context.drawImage(image, 0, 0);
+
+      const channel = (n) => {
+        const v = n / 255;
+        return v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
+      };
+      const luminance = ([r, g, b]) => 0.2126 * channel(r) + 0.7152 * channel(g) + 0.0722 * channel(b);
+      const ratio = (front, back) => {
+        const [bright, dark] = [luminance(front), luminance(back)].sort((a, b) => b - a);
+        return (bright + 0.05) / (dark + 0.05);
+      };
+
+      return probes.map((probe) => {
+        const ink = probe.color.match(/\d+(?:\.\d+)?/g).map(Number).slice(0, 3);
+        /* A grid across the element rather than one point in the middle: the
+           aura is a gradient, so the worst pixel under a wide paragraph is at
+           one of its ends.
+
+           It keeps well inside the box, which is not slack but accuracy. The
+           question is what colour is behind the words, and an element's
+           extreme edge is not behind its words: the corner of a 999px pill is
+           outside the pill, the last row of `.more` is its pink underline and
+           the first column of the support warning is its pink rule. Sampling
+           those measures ink against ink and reports 1.02 for a control that
+           the token ratios above already cover properly. */
+        let worst = { ratio: Infinity, background: null };
+        for (let i = 0; i <= 4; i++) {
+          for (let j = 0; j <= 2; j++) {
+            const x = Math.round(probe.rect.x + probe.rect.w * (0.1 + 0.2 * i));
+            const y = Math.round(probe.rect.y + probe.rect.h * (0.3 + 0.2 * j));
+            if (x < 0 || y < 0 || x >= canvas.width || y >= canvas.height) continue;
+            const [r, g, b] = context.getImageData(x, y, 1, 1).data;
+            const found = ratio(ink, [r, g, b]);
+            if (found < worst.ratio) worst = { ratio: found, background: `rgb(${r}, ${g}, ${b})` };
+          }
+        }
+        return { ...probe, ...worst };
+      });
+    }, { shot, probes });
+
+    for (const probe of measured) {
+      const floor = contrastFloor(probe);
+      if (probe.ratio < floor) {
+        failures.push(
+          `${probe.what} is ${probe.color} on ${probe.background}: ${probe.ratio.toFixed(2)}, needs ${floor}`,
+        );
+      }
+    }
+  }
+
+  return failures;
+}
+
+/* Both themes, both text sizes, both pages. The aura runs on the privacy page
+   too, at half strength, so the page a person opens while deciding whether to
+   trust the app is measured the same way as the one selling it to them. */
+for (const scheme of ['light', 'dark']) {
+  for (const textSize of ['100%', '200%']) {
+    test(`${scheme} at ${textSize}: the scrim holds text contrast over the whole aura`, async () => {
+      const { context, page } = await visitor({ colorScheme: scheme });
+      const decoder = await pixelDecoder();
+      try {
+        await page.setViewportSize({ width: 1280, height: 900 });
+        for (const suffix of Object.values(PAGE_PATHS)) {
+          await page.goto(`${base}/en/${suffix}`);
+          assert.equal(await themeNow(page), scheme, `asked for ${scheme} and got the other palette`);
+          await page.evaluate((size) => {
+            document.documentElement.style.fontSize = size;
+          }, textSize);
+
+          const failures = await scrimFailures(page, decoder.page);
+          assert.deepEqual(failures, [], `/en/${suffix} at ${textSize} in ${scheme}`);
+        }
+      } finally {
+        await decoder.close();
+        await context.close();
+      }
+    });
+  }
+}
+
+// The motion system (ticket 17)
+
+/* Motion is only observable as computed style, so these read style where the
+   rest of the file reads behaviour. What they are protecting is a claim the
+   ticket makes twice: a Chromium visitor gets the whole thing with scripting
+   switched off, and somebody who asked for reduced motion gets a finished
+   page with nothing moving on it rather than a page missing its parts. */
+
+/** The computed value of one property on the first match. */
+const styleOf = (page, selector, property) =>
+  page.evaluate(
+    ([selector, property]) => getComputedStyle(document.querySelector(selector))[property],
+    [selector, property],
+  );
+
+test('scroll-driven motion runs with scripting switched off', async () => {
+  /* No JavaScript at all: no hydration, no reveal.ts, nothing but the file the
+     host served and the stylesheet it links. Everything asserted below is
+     therefore CSS doing it. */
+  const { context, page } = await visitor({ javaScriptEnabled: false });
+  try {
+    await page.goto(`${base}/en/`);
+
+    const pan = await styleOf(page, '.tour-strip', 'animationName');
+    assert.equal(pan, 'pan', 'the tour did not pan without scripting');
+    assert.equal(
+      await styleOf(page, '.tour-stage', 'position'),
+      'sticky',
+      'the tour did not pin without scripting',
+    );
+
+    const reveals = await page
+      .locator('.reveal')
+      .evaluateAll((found) => found.map((node) => getComputedStyle(node).animationName));
+    assert.ok(reveals.length >= 8, `only ${reveals.length} items were set up to reveal`);
+    assert.ok(
+      reveals.every((name) => name === 'rise'),
+      'some items were not revealing without scripting',
+    );
+
+    assert.equal(
+      await styleOf(page, '.flag-stroke path', 'animationName'),
+      'draw',
+      'the hero stroke did not draw without scripting',
+    );
+  } finally {
+    await context.close();
+  }
+});
+
+test('the reveals are per item rather than per section', async () => {
+  /* The failure this exists for is the one ticket 17 was written about: the
+     class sitting on whole <section> elements, where a 600px block sliding
+     24px is invisible by construction and the page reads as still. */
+  const { context, page } = await visitor({});
+  try {
+    await page.goto(`${base}/en/`);
+
+    const sections = await page
+      .locator('main section')
+      .evaluateAll((found) => found.map((node) => getComputedStyle(node).animationName));
+    assert.ok(
+      sections.every((name) => name === 'none'),
+      'a whole section is still being revealed as one lump',
+    );
+
+    /* And they are staggered against each other, which for a scrubbed
+       animation means their ranges are offset rather than their delays. */
+    const ranges = await page
+      .locator('.entries .reveal')
+      .evaluateAll((found) => found.map((node) => getComputedStyle(node).animationRangeStart));
+    assert.ok(ranges.length >= 4, `only ${ranges.length} feature entries reveal`);
+    assert.ok(
+      new Set(ranges).size > 1,
+      `every item reveals at the same point, so nothing is staggered: ${ranges[0]}`,
+    );
+  } finally {
+    await context.close();
+  }
+});
+
+test('reduced motion removes the pinning and the drawing, and finishes them', async () => {
+  const { context, page } = await visitor({});
+  try {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await page.goto(`${base}/en/`);
+
+    assert.equal(
+      await styleOf(page, '.tour-stage', 'position'),
+      'static',
+      'the tour still pins with reduced motion',
+    );
+    assert.equal(
+      await styleOf(page, '.tour-strip', 'animationName'),
+      'none',
+      'the tour still pans with reduced motion',
+    );
+    assert.equal(
+      await styleOf(page, '.tour-stage', 'overflowX'),
+      'auto',
+      'with the pinning gone the strip has no way to be read',
+    );
+
+    /* The stroke is finished rather than absent. Its dash is what hides it
+       while it draws, and that only exists inside the motion block, so with
+       reduced motion there is no dash and the line is simply there. */
+    assert.equal(
+      await styleOf(page, '.flag-stroke path', 'animationName'),
+      'none',
+      'the hero stroke still draws itself with reduced motion',
+    );
+    assert.equal(
+      await styleOf(page, '.flag-stroke path', 'strokeDasharray'),
+      'none',
+      'the hero stroke is dashed with reduced motion, so it is drawn part way and left there',
+    );
+
+    const reveals = await page
+      .locator('.reveal')
+      .evaluateAll((found) =>
+        found.map((node) => ({
+          animation: getComputedStyle(node).animationName,
+          opacity: getComputedStyle(node).opacity,
+        })),
+      );
+    assert.ok(
+      reveals.every((item) => item.animation === 'none' && item.opacity === '1'),
+      'an item is still revealing, or was left invisible, with reduced motion',
+    );
+  } finally {
+    await context.close();
+  }
+});
+
+test('the hand-rolled fallback stands down where the CSS works', async () => {
+  /* reveal.ts exists for browsers without scroll-driven animations. Where
+     they are supported it must do nothing at all, or an element gets moved
+     twice: once by the scrubbed animation and once by a transition. */
+  const { context, page } = await visitor({});
+  try {
+    await page.goto(`${base}/en/`);
+    await page.waitForLoadState('networkidle');
+
+    assert.ok(
+      await page.evaluate(() => CSS.supports('animation-timeline', 'view()')),
+      'this browser cannot scrub, so the assertion below proves nothing',
+    );
+    assert.equal(
+      await page.locator('[data-reveal]').count(),
+      0,
+      'the fallback marked elements in a browser whose CSS already reveals them',
+    );
+  } finally {
+    await context.close();
+  }
+});
+
+test('the hand-rolled fallback reveals items in a browser that cannot scrub', async () => {
+  /* The other half of the test above, and the only way to reach it here:
+     Chromium can scrub, so reveal.ts stands down and its actual behaviour
+     would never run in this suite. Telling the page that one feature query
+     answers no is enough to take the branch a Safari or Firefox visitor
+     takes, without pretending to be either. */
+  const { context, page } = await visitor({});
+  try {
+    await context.addInitScript(() => {
+      const real = CSS.supports.bind(CSS);
+      CSS.supports = (...query) =>
+        query.some((part) => String(part).includes('animation-timeline')) ? false : real(...query);
+    });
+    await page.goto(`${base}/en/`);
+    await page.waitForLoadState('networkidle');
+
+    const waiting = page.locator('[data-reveal="pending"]');
+    assert.ok(
+      (await waiting.count()) > 0,
+      'the fallback marked nothing, so nothing below the fold would ever arrive',
+    );
+
+    /* Nothing already on screen is touched, because hiding what somebody is
+       reading so it can fade back in is a flash in their face. */
+    const aboveTheFold = await page.evaluate(() =>
+      [...document.querySelectorAll('[data-reveal="pending"]')].filter(
+        (node) => node.getBoundingClientRect().top < window.innerHeight,
+      ).length,
+    );
+    assert.equal(aboveTheFold, 0, 'the fallback hid something the reader could already see');
+
+    /* A handle rather than the locator. `[data-reveal="pending"]` stops
+       matching the moment the thing arrives, so a locator re-resolves to the
+       next element still waiting and the assertion below would be about a
+       different paragraph than the one that was scrolled to. */
+    const first = await waiting.first().elementHandle();
+    await first.scrollIntoViewIfNeeded();
+    await first.evaluate(
+      (node) =>
+        new Promise((resolve) => {
+          if (node.dataset.reveal === 'in') return resolve(true);
+          new MutationObserver((_, observer) => {
+            if (node.dataset.reveal !== 'in') return;
+            observer.disconnect();
+            resolve(true);
+          }).observe(node, { attributes: true, attributeFilter: ['data-reveal'] });
+        }),
+    );
+    assert.equal(
+      await first.getAttribute('data-reveal'),
+      'in',
+      'an item scrolled into view never arrived',
+    );
+  } finally {
+    await context.close();
+  }
+});
+
+for (const locale of ['en', 'pl']) {
+  test(`${locale}: the pinned tour loses no caption at 200% text`, async () => {
+    /* The pin holds the strip at the height of one window and clips it, which
+       is what stops a strip several windows wide from widening the document.
+       Clipping the other axis as well cut 463px of English and 415px of
+       Polish off the bottom of every card at 200% text on a 390px screen: a
+       caption runs about fifteen lines there, so the card is 1250px tall
+       against a stage of 788, and the text simply was not on the page. At
+       exactly the text size somebody picks because they need it. */
+    const { context, page } = await visitor({});
+    try {
+      await page.setViewportSize({ width: 390, height: 844 });
+      await page.goto(`${base}/${locale}/`);
+      await page.evaluate(() => {
+        document.documentElement.style.fontSize = '200%';
+      });
+      await nextFrame(page);
+
+      const lost = await page.evaluate(() => {
+        const stage = document.querySelector('.tour-stage');
+        /* scrollHeight, not clientHeight: what a reader can reach is the whole
+           scrollable area, and the question is whether any of a card falls
+           outside even that. */
+        return [...document.querySelectorAll('.tour-strip li')]
+          .map((card) => ({
+            screen: card.querySelector('h3').textContent,
+            beyond: Math.round(card.getBoundingClientRect().height - stage.scrollHeight),
+          }))
+          .filter((card) => card.beyond > 0);
+      });
+      assert.deepEqual(lost, [], `/${locale}/ cuts the bottom off a tour card at 200% text`);
+    } finally {
+      await context.close();
+    }
+  });
+}
+
+for (const scheme of ['light', 'dark']) {
+  test(`${scheme}: the hero stroke is painted in the flag's colours`, async () => {
+    /* The one part of the stroke that could fail silently. Everything else
+       about it is asserted through animation-name, and a gradient whose stops
+       did not resolve still animates: it just draws a black line under the
+       headline, in both themes, and nothing says so. */
+    const { context, page } = await visitor({ colorScheme: scheme });
+    try {
+      await page.goto(`${base}/en/`);
+      assert.equal(await themeNow(page), scheme, `asked for ${scheme} and got the other palette`);
+
+      const painted = await page.evaluate(() => {
+        const root = getComputedStyle(document.documentElement);
+        const stop = (selector) =>
+          getComputedStyle(document.querySelector(selector)).stopColor;
+        const token = (name) => {
+          /* Resolved through the browser, because --grad-a is a hex and
+             stop-color comes back as rgb. */
+          const probe = document.createElement('span');
+          probe.style.color = root.getPropertyValue(name).trim();
+          document.body.append(probe);
+          const resolved = getComputedStyle(probe).color;
+          probe.remove();
+          return resolved;
+        };
+        return {
+          start: stop('.stop-start'),
+          mid: stop('.stop-mid'),
+          end: stop('.stop-end'),
+          gradA: token('--grad-a'),
+          gradB: token('--grad-b'),
+        };
+      });
+
+      assert.equal(painted.start, painted.gradA, 'the stroke does not start in the theme blue');
+      assert.equal(painted.end, painted.gradB, 'the stroke does not end in the theme pink');
+      for (const [where, colour] of Object.entries(painted)) {
+        assert.notEqual(
+          colour,
+          'rgb(0, 0, 0)',
+          `the ${where} of the stroke resolved to black, so a var() did not reach it`,
+        );
+      }
+    } finally {
+      await context.close();
+    }
+  });
+}
+
+test('the motion system brought no dependency with it', async () => {
+  /* Ticket 17, and Alicja's answer about Rive: the pinning, the scrubbing and
+     the drawn stroke are CSS, and the fallback is a file in this repository.
+     A landing page arguing that the app holds nothing back does not ship an
+     animation library to slide paragraphs upward. */
+  const manifest = JSON.parse(
+    await readFile(fileURLToPath(new URL('../package.json', import.meta.url)), 'utf8'),
+  );
+  assert.deepEqual(
+    manifest.dependencies ?? {},
+    {},
+    'the site gained a runtime dependency',
+  );
+
+  /* Matched whole, not as substrings. "motion" inside a package name catches
+     half the ecosystem and "aos" catches any word containing it, and a test
+     that fails on an innocent dependency gets deleted rather than fixed. */
+  const banned = new Set([
+    'gsap',
+    'motion',
+    'framer-motion',
+    'animejs',
+    'lenis',
+    'aos',
+    'lottie-web',
+    '@rive-app/canvas',
+    '@rive-app/webgl',
+    '@lottiefiles/dotlottie-web',
+  ]);
+  for (const name of Object.keys(manifest.devDependencies ?? {})) {
+    assert.ok(
+      !banned.has(name),
+      `${name} is an animation library, and this page does its motion in CSS`,
+    );
   }
 });
 

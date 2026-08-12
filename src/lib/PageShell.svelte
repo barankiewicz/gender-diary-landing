@@ -1,6 +1,8 @@
 <script lang="ts">
-  import type { Snippet } from 'svelte';
+  import { onMount, type Snippet } from 'svelte';
+  import Aura from '$lib/Aura.svelte';
   import ThemeControl from '$lib/ThemeControl.svelte';
+  import { startReveals } from '$lib/reveal';
   import {
     LANGUAGE_KEY,
     LOCALES,
@@ -24,6 +26,12 @@
   const m = $derived(messages[locale]);
   const canonical = $derived(SITE_ORIGIN + pathFor(locale, page));
   const description = $derived(m.meta[page].description);
+
+  /* The scroll reveals for browsers that cannot scrub them in CSS. It decides
+     for itself whether there is anything to do, and returns the teardown.
+     onMount rather than $effect because it reads the laid-out page once and
+     has nothing to re-run for. */
+  onMount(startReveals);
 
   /* Only a person choosing a language is remembered, which is why this is on
      the click and not on the page. Opening somebody else's link to /en/ is not
@@ -85,6 +93,12 @@
     {@html structuredDataScript(locale)}
   {/if}
 </svelte:head>
+
+<!-- The site's ground, under both pages and under the header. The landing page
+     leads with it and the privacy page runs it at half, which is the whole of
+     the difference between them: one layer, one set of tokens, two
+     intensities (ticket 17). -->
+<Aura strength={page === 'landing' ? 'full' : 'quiet'} />
 
 <header class="controls">
   {#if page !== 'landing'}

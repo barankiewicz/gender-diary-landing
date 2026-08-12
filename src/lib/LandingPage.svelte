@@ -15,15 +15,51 @@
        18). The acquisition section below keeps the honest wording: nothing on
        Android exists yet. -->
   <div class="hero">
-    <div class="aurora" aria-hidden="true">
-      <div class="blob blob-a"></div>
-      <div class="blob blob-b"></div>
-      <div class="blob blob-c"></div>
-    </div>
-
-    <div class="hero-inner">
+    <div class="hero-inner scrim">
       <h1 class="enter shimmer" style:--enter={0}>{m.pageTitle}</h1>
-      <p class="headline enter" style:--enter={1}>{m.hero.headline}</p>
+      <!-- Shrink-wrapped around the headline so the stroke below is exactly
+           as wide as the words it sits under, whatever the balancer does with
+           the line breaks. -->
+      <div class="headline-block enter" style:--enter={1}>
+        <p class="headline">{m.hero.headline}</p>
+
+        <!-- The flag as a line rather than as stripes: one hand-drawn curve
+             stroked blue to white to pink, drawing itself once the headline has
+             landed. Alicja asked for this in Rive (2026-08-12); it is SVG
+             because Rive would be 150-200kb of runtime and WASM against a
+             ticket that argues 40kb is already too much, would need
+             wasm-unsafe-eval in a policy that has no eval anywhere in it, and
+             would leave a visitor without scripting looking at an empty canvas.
+             This is markup, so they get the line too.
+
+             pathLength normalises the curve to 1 unit, which is what lets the
+             dash in base.css be written as a fraction rather than as a length
+             somebody has to measure again after every edit to the `d`. -->
+        <svg
+          class="flag-stroke"
+          viewBox="0 0 400 14"
+          preserveAspectRatio="none"
+          aria-hidden="true"
+          focusable="false"
+        >
+          <defs>
+            <linearGradient id="flag-stroke-gradient" x1="0" y1="0" x2="1" y2="0">
+              <stop class="stop-start" offset="0%" />
+              <stop class="stop-mid" offset="50%" />
+              <stop class="stop-end" offset="100%" />
+            </linearGradient>
+          </defs>
+          <path
+            pathLength="1"
+            d="M4 10 C 78 3, 148 12, 226 6 S 344 3, 396 9"
+            fill="none"
+            stroke="url(#flag-stroke-gradient)"
+            stroke-width="3"
+            stroke-linecap="round"
+          />
+        </svg>
+      </div>
+
       <p class="subheadline enter" style:--enter={2}>{m.hero.subheadline}</p>
 
       <div class="hero-actions enter" style:--enter={3}>
@@ -37,117 +73,192 @@
     </div>
   </div>
 
-  <section class="overview reveal">
-    <h2>{m.sectionOverview}</h2>
-    <div class="overview-columns">
-      <Prose paragraphs={m.overview} />
+  <!-- Ticket 17's composition. Every section below is the same two-column
+       split - a rail that sticks while its content scrolls past - and every
+       one of them fills the right column with a different object. Ticket 09
+       shipped seven identical centred boxes, each an h2 on top of its
+       content, and that repetition rather than the animation count is what
+       made the page read corporate. The rail is also what survives Polish:
+       it is a fixed width and the prose column absorbs the extra lines.
+
+       The one exception is the tour, which breaks out on purpose. One
+       deliberate escape reads as emphasis; the rail everywhere else is what
+       keeps it from reading as an accident. -->
+
+  <section class="split scrim">
+    <div class="rail">
+      <h2>{m.sectionOverview}</h2>
+      <div class="standfirst"><Prose paragraphs={m.overview.slice(0, 1)} /></div>
+    </div>
+    <div class="body lede">
+      <Prose paragraphs={m.overview.slice(1)} reveal />
     </div>
   </section>
 
-  <section class="privacy-handoff reveal">
-    <h2>{m.sectionPrivacy}</h2>
-    <div class="panel">
-      <Prose paragraphs={m.privacyHandoff} />
-      <!-- The link is the privacy page's own title, so the reader knows what
-           they are opening before they open it. -->
-      <p class="more-line"><a class="more" href={pathFor(locale, 'privacy')}>{m.privacyPage.title}</a></p>
+  <section class="split scrim">
+    <div class="rail">
+      <h2>{m.sectionPrivacy}</h2>
+      <div class="standfirst"><Prose paragraphs={m.privacyHandoff.slice(0, 1)} /></div>
     </div>
-  </section>
-
-  <section class="tour reveal">
-    <h2>{m.sectionTour}</h2>
-    <p class="tour-intro">{m.tourIntro}</p>
-
-    <!-- Captions without their screenshots. Each card reserves the frame the
-         screenshot will occupy (ticket 15 captures them from invented data);
-         until then the frame holds only this section's colours, and the page
-         describes no picture that is not there. -->
-    <ol class="tour-strip">
-      {#each m.tour as screen, index (screen.screen)}
-        <li>
-          <div class="slot" aria-hidden="true" data-tint={index % 2 ? 'pink' : 'blue'}></div>
-          <h3>{screen.screen}</h3>
-          <p>{screen.caption}</p>
-        </li>
-      {/each}
-    </ol>
-  </section>
-
-  <section class="features">
-    <h2 class="reveal">{m.sectionFeatures}</h2>
-    {#each m.features as group (group.group)}
-      <!-- The groups are headed rather than run together because one of them
-           opens by saying that everything in it is off until you turn it on,
-           and that sentence is only true of its own group. -->
-      <div class="group reveal">
-        <h3>{group.group}</h3>
-        <div class="cards">
-          <!-- Rendered here rather than through Prose because the card grid
-               needs to know which paragraph is a group's plain intro, and
-               Prose deliberately does not distinguish. The rendering of each
-               paragraph is Prose's, character for character: `rest` carries
-               its own separator. -->
-          {#each group.paragraphs as paragraph, index (index)}
-            {#if typeof paragraph === 'string'}
-              <p class="plain">{paragraph}</p>
-            {:else}
-              <p><strong>{paragraph.lead}</strong>{paragraph.rest}</p>
-            {/if}
-          {/each}
-        </div>
+    <div class="body">
+      <div class="panel reveal">
+        <Prose paragraphs={m.privacyHandoff.slice(1)} />
+        <!-- The link is the privacy page's own title, so the reader knows what
+             they are opening before they open it. -->
+        <p class="more-line"><a class="more" href={pathFor(locale, 'privacy')}>{m.privacyPage.title}</a></p>
       </div>
-    {/each}
+    </div>
   </section>
 
-  <section class="acquisition reveal">
-    <h2>{m.sectionAcquisition}</h2>
-    <p class="acquisition-intro">{m.acquisitionIntro}</p>
+  <section class="tour">
+    <div class="tour-head scrim">
+      <h2>{m.sectionTour}</h2>
+      <p class="tour-intro">{m.tourIntro}</p>
+    </div>
 
-    <!-- The primary action, again at the moment a reader has just finished
-         deciding: a plain link, in this tab, to the URL and nothing appended
-         to it. What may not ride along with it is on JOURNAL_URL in
-         $lib/site. -->
-    <p class="acquisition-action"><a class="cta" href={JOURNAL_URL}>{m.startJournal}</a></p>
+    <!-- Captions without their screenshots. Each frame declares the aspect
+         ratio its screenshot will have, so ticket 16 drops the pictures in
+         and moves no layout; until then the frame holds only this section's
+         colours, and the page describes no picture that is not there. -->
+    <div class="tour-pin" style:--tour-cards={m.tour.length}>
+      <div class="tour-stage">
+        <ol class="tour-strip">
+          {#each m.tour as screen, index (screen.screen)}
+            <li>
+              <div class="slot" aria-hidden="true" data-tint={index % 2 ? 'pink' : 'blue'}></div>
+              <h3>{screen.screen}</h3>
+              <p>{screen.caption}</p>
+            </li>
+          {/each}
+        </ol>
+      </div>
+    </div>
+  </section>
 
-    <p class="android">{m.acquisitionAndroid}</p>
-
-    <!-- The three that do not report an install to Google first, alphabetical
-         among themselves, and Google Play last. Unlike the splash's badges,
-         these carry the notes and the honest status, and a channel here
-         becomes a link only when it has an artifact behind it (Journal
-         ticket 18). -->
-    <ul class="channels">
-      {#each m.channels as channel (channel.name)}
-        <li>
-          <strong>{channel.name}</strong>
-          <span class="status">{m.channelStatus}</span>
-          <p>{channel.note}</p>
-        </li>
+  <section class="split scrim">
+    <div class="rail">
+      <h2>{m.sectionFeatures}</h2>
+    </div>
+    <div class="body">
+      {#each m.features as group (group.group)}
+        <!-- The groups are headed rather than run together because one of them
+             opens by saying that everything in it is off until you turn it on,
+             and that sentence is only true of its own group. -->
+        <div class="group">
+          <h3>{group.group}</h3>
+          <div class="entries">
+            <!-- Rendered here rather than through Prose because this layout
+                 needs to know which paragraph is a group's plain intro, and
+                 Prose deliberately does not distinguish. The rendering of each
+                 paragraph is Prose's, character for character: `rest` carries
+                 its own separator. -->
+            {#each group.paragraphs as paragraph, index (index)}
+              {#if typeof paragraph === 'string'}
+                <p class="plain reveal" style:--reveal-index={index}>{paragraph}</p>
+              {:else}
+                <p class="reveal" style:--reveal-index={index}><strong>{paragraph.lead}</strong>{paragraph.rest}</p>
+              {/if}
+            {/each}
+          </div>
+        </div>
       {/each}
-    </ul>
+    </div>
   </section>
 
-  <section class="support reveal">
-    <h2>{m.sectionSupport}</h2>
-    <Prose paragraphs={m.support} />
+  <section class="split scrim">
+    <div class="rail">
+      <h2>{m.sectionAcquisition}</h2>
+      <p class="standfirst">{m.acquisitionIntro}</p>
+    </div>
+    <div class="body">
+      <!-- The primary action, again at the moment a reader has just finished
+           deciding: a plain link, in this tab, to the URL and nothing appended
+           to it. What may not ride along with it is on JOURNAL_URL in
+           $lib/site. -->
+      <p class="acquisition-action"><a class="cta" href={JOURNAL_URL}>{m.startJournal}</a></p>
+
+      <p class="android">{m.acquisitionAndroid}</p>
+
+      <!-- The three that do not report an install to Google first, alphabetical
+           among themselves, and Google Play last. Unlike the splash's badges,
+           these carry the notes and the honest status, and a channel here
+           becomes a link only when it has an artifact behind it (Journal
+           ticket 18). -->
+      <ul class="channels">
+        {#each m.channels as channel, index (channel.name)}
+          <li class="reveal" style:--reveal-index={index}>
+            <strong>{channel.name}</strong>
+            <span class="status">{m.channelStatus}</span>
+            <p>{channel.note}</p>
+          </li>
+        {/each}
+      </ul>
+    </div>
+  </section>
+
+  <section class="split scrim">
+    <div class="rail">
+      <h2>{m.sectionSupport}</h2>
+    </div>
+    <div class="body support">
+      <Prose paragraphs={m.support} reveal />
+    </div>
   </section>
 </PageShell>
 
 <style>
-  section {
+  /* ---- The rail ---------------------------------------------------------- */
+
+  /* One shape for every section, and a different object in the right column
+     of each. The rail is a fixed width so that Polish, which runs longer than
+     English, lengthens the prose column instead of squeezing the heading. */
+  .split {
     max-width: 68rem;
     margin: 0 auto;
     padding: clamp(3rem, 8vh, 5.5rem) clamp(1rem, 4vw, 2.5rem) 0;
+    display: grid;
+    grid-template-columns: minmax(0, 17rem) minmax(0, 1fr);
+    gap: clamp(1.5rem, 5vw, 4.5rem);
+    align-items: start;
   }
 
   section:last-of-type {
     padding-bottom: clamp(4rem, 10vh, 7rem);
   }
 
+  /* 56px is the sticky header, and the rest is so the heading does not sit
+     against it. `align-items: start` above is what makes this stickable: a
+     stretched grid item is already as tall as its row and has nowhere to
+     stick to. */
+  .rail {
+    position: sticky;
+    top: calc(56px + 1.5rem);
+  }
+
   h2 {
-    font-size: clamp(1.7rem, 3.5vw, 2.5rem);
+    font-size: clamp(1.5rem, 2.6vw, 2.1rem);
     font-weight: 600;
-    margin: 0 0 1.5rem;
+    margin: 0;
+    text-wrap: balance;
+  }
+
+  /* Existing copy moved, never written: the standfirst is the section's own
+     first paragraph, which ticket 17 relocates rather than replaces. Sections
+     whose copy has no such paragraph get a rail with only a heading in it,
+     because inventing one here would be a copy change. */
+  .standfirst {
+    margin-top: 1rem;
+    color: var(--muted);
+    font-size: 0.9375rem;
+  }
+
+  .standfirst :global(p:last-child),
+  p.standfirst {
+    margin-bottom: 0;
+  }
+
+  .body > :global(p:last-child) {
+    margin-bottom: 0;
   }
 
   /* ---- Hero ------------------------------------------------------------ */
@@ -155,72 +266,28 @@
   /* 56px is the sticky header's one-row height. On viewports narrow enough
      for the controls to wrap, the sum overshoots the viewport by a row and
      the page simply scrolls; the mobile override below steps in before that
-     looks wrong. */
+     looks wrong.
+
+     No `overflow: clip` any more. It was here to hold the aurora inside the
+     hero, and holding the aurora inside the hero is exactly what put a hard
+     horizontal line across the page at the first scroll (ticket 17). The
+     layer is fixed to the viewport in Aura.svelte now and clips itself. */
   .hero {
     position: relative;
     display: grid;
     align-items: center;
     min-height: calc(100dvh - 56px);
-    overflow: clip;
   }
 
-  .aurora {
-    position: absolute;
-    inset: 0;
-    pointer-events: none;
-  }
-
-  .blob {
-    position: absolute;
-    border-radius: 50%;
-    filter: blur(70px);
-    will-change: transform;
-  }
-
-  .blob-a {
-    width: 55vw;
-    height: 55vw;
-    right: -12vw;
-    top: -18vw;
-    background: radial-gradient(circle, var(--blob-blue), transparent 65%);
-  }
-
-  .blob-b {
-    width: 48vw;
-    height: 48vw;
-    right: 4vw;
-    bottom: -16vw;
-    background: radial-gradient(circle, var(--blob-pink), transparent 65%);
-  }
-
-  .blob-c {
-    width: 30vw;
-    height: 30vw;
-    right: 12vw;
-    top: 28%;
-    background: radial-gradient(circle, var(--blob-white), transparent 60%);
-  }
-
-  /* The drift keyframes live in base.css behind the same media query, which
-     is the gate for everything that moves on the site. With reduced motion
-     the blobs still paint, parked where their drift would start. */
-  @media (prefers-reduced-motion: no-preference) {
-    .blob-a {
-      animation: drift-a 19s ease-in-out infinite;
-    }
-
-    .blob-b {
-      animation: drift-b 23s ease-in-out infinite;
-    }
-
-    .blob-c {
-      animation: drift-c 27s ease-in-out infinite;
-    }
-  }
-
+  /* min-width: 0 because this is a grid item, and a grid track's automatic
+     minimum is its content's min-content size. At 200% text the longest word
+     in the headline is wider than a phone, so the track grew to fit it and
+     took the document sideways with it. The clip that used to be on .hero hid
+     that by cutting the word off instead, which is not better. */
   .hero-inner {
     position: relative;
     width: 100%;
+    min-width: 0;
     max-width: 68rem;
     margin: 0 auto;
     padding: 2rem clamp(1rem, 4vw, 2.5rem) 4rem;
@@ -242,14 +309,55 @@
 
   /* Ink for most of its length, and the flag's two colours at the end of the
      last line. The endpoints are the theme's text-safe pair, so the gradient
-     never trades contrast for the effect. */
+     never trades contrast for the effect.
+
+     min() around the clamp's floor, for the reason the .channels grid uses
+     one: a floor written in rem is a promise about the smallest this may be,
+     and at 200% text 2.4rem is 76.8px, which sets "transition" wider than the
+     phone holding it. The min() lets the floor fall back to what the viewport
+     can carry and leaves the 2.4rem intent untouched everywhere it fits. */
+  /* Shrink-wrapped so that .flag-stroke below can be exactly as wide as the
+     longest line of the headline, whatever text-wrap: balance decides that
+     is, in either language. */
+  .headline-block {
+    width: fit-content;
+    max-width: 100%;
+    margin: 0 0 1.5rem;
+  }
+
+  /* The stop colours are CSS rather than stop-color attributes on the stops
+     themselves. A var() inside an SVG presentation attribute resolves in
+     Chromium and has a history of not resolving elsewhere, and the way it
+     fails is the stop falling back to black: the one part of this that could
+     quietly stop being the flag. As the stop-color property it is ordinary
+     CSS everywhere. */
+  .stop-start {
+    stop-color: var(--grad-a);
+  }
+
+  .stop-mid {
+    stop-color: var(--stroke-mid);
+  }
+
+  .stop-end {
+    stop-color: var(--grad-b);
+  }
+
+  .flag-stroke {
+    display: block;
+    width: 100%;
+    height: 0.85rem;
+    margin-top: 0.35rem;
+    overflow: visible;
+  }
+
   .headline {
-    font-size: clamp(2.4rem, 7vw, 4.75rem);
+    font-size: clamp(min(2.4rem, 12vw), 7vw, 4.75rem);
     font-weight: 600;
     line-height: 1.05;
     letter-spacing: -0.03em;
     text-wrap: balance;
-    margin: 0 0 1.25rem;
+    margin: 0;
     max-width: 17ch;
     background: linear-gradient(105deg, var(--ink) 45%, var(--grad-a) 78%, var(--grad-b) 96%);
     -webkit-background-clip: text;
@@ -281,7 +389,7 @@
     padding: 0;
   }
 
-  /* Store-badge-shaped, glass over the aurora. */
+  /* Store-badge-shaped, glass over the aura. */
   .badge {
     position: relative;
     display: inline-block;
@@ -321,27 +429,17 @@
 
   /* ---- Overview ---------------------------------------------------------- */
 
-  .overview-columns {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 2.5rem;
-    align-items: start;
-  }
-
-  .overview-columns :global(p) {
-    margin: 0;
-  }
-
-  .overview-columns :global(p:first-child) {
-    font-size: clamp(1.15rem, 2vw, 1.4rem);
+  .lede :global(p) {
+    font-size: clamp(1.15rem, 2vw, 1.45rem);
     line-height: 1.5;
+    max-width: 34ch;
   }
 
   /* ---- Privacy hand-off --------------------------------------------------- */
 
   .panel {
     border-radius: 1.25rem;
-    padding: clamp(1.5rem, 4vw, 3rem);
+    padding: clamp(1.5rem, 4vw, 2.5rem);
     border: 1px solid transparent;
     background:
       linear-gradient(var(--surface), var(--surface)) padding-box,
@@ -375,10 +473,98 @@
 
   /* ---- Tour ---------------------------------------------------------------- */
 
+  /* The deliberate exception. It keeps no rail and no 68rem container: the
+     strip runs the full width of the window, so the aura is at full strength
+     around it rather than behind a scrim. */
+  .tour {
+    padding: clamp(3rem, 8vh, 5.5rem) 0 0;
+  }
+
+  .tour-head {
+    max-width: 68rem;
+    margin: 0 auto 2rem;
+    padding: 0 clamp(1rem, 4vw, 2.5rem);
+  }
+
   .tour-intro {
     color: var(--muted);
     max-width: 55ch;
-    margin-bottom: 2rem;
+    margin: 1rem 0 0;
+  }
+
+  /* The strip a reader gets when nothing pins it: their own scroll container,
+     wider than the window and scrolling inside itself so it never takes the
+     document sideways. This is the finished section for a browser without
+     scroll-driven animations and for anybody who asked for reduced motion,
+     and the pinned pan below is written on top of it rather than instead of
+     it. */
+  .tour-stage {
+    overflow-x: auto;
+    scroll-snap-type: x proximity;
+    scrollbar-width: thin;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    @supports (animation-timeline: view()) {
+      /* The scroll distance the pan is spent over. The stage sticks for the
+         height of this box less its own, so 320vh of page buys roughly 220vh
+         of pinned pan. */
+      /* The scroll the pan is spent over, which is the strip's own overflow
+         and not a fixed guess. At 320vh flat, a 2560px window - where eight
+         19rem frames barely exceed the viewport and there is almost nothing
+         left to pan - still pinned the page for two windowfuls of dead
+         scroll. Derived like this the pan runs at 1:1 with the scrollbar, and
+         on a window wide enough to hold the whole strip the pin is one screen
+         and effectively stands down.
+
+         --tour-cards is stamped by the component, so the count comes from the
+         message catalogue rather than from a number written down twice. */
+      .tour-pin {
+        --strip: calc(
+          var(--tour-cards) * min(19rem, 78vw) + (var(--tour-cards) - 1) * 1.25rem + 2 *
+            clamp(1rem, 4vw, 2.5rem)
+        );
+        height: calc(100dvh - 56px + max(0px, var(--strip) - 100vw));
+        view-timeline: --tour block;
+      }
+
+      .tour-stage {
+        position: sticky;
+        top: 56px;
+        height: calc(100dvh - 56px);
+        display: flex;
+        /* `safe` matters here. Plain `center` on a card taller than the stage
+           spills it off both ends equally, and the half above the start edge
+           is unreachable however the overflow is handled: scrollHeight does
+           not extend backwards. `safe` puts the whole overflow at the end,
+           where scrolling can reach it. */
+        align-items: safe center;
+        /* Sideways is clipped, because the strip is driven rather than
+           dragged now and the clip is also what stops a strip several windows
+           wide from widening the document.
+
+           Downwards is not, and that is not symmetry for its own sake. At
+           200% text on a 390px screen a caption runs about fifteen lines, and
+           a card is then 1250px tall against a stage of 788: clipping both
+           axes cut 463px of English and 415px of Polish off the bottom of
+           every card, silently, at exactly the text size somebody chooses
+           because they need it. Nothing is lost this way. At ordinary text
+           sizes the card fits and no scrollbar appears at all. */
+        overflow-x: clip;
+        overflow-y: auto;
+        scroll-snap-type: none;
+      }
+
+      /* `contain` is the phase where the pin box covers the whole viewport,
+         which is exactly the stretch over which the stage is stuck. The
+         keyframe is in base.css with the rest of them, and it carries the
+         reason this pan exists. */
+      .tour-strip {
+        animation: pan linear both;
+        animation-timeline: --tour;
+        animation-range: contain 0% contain 100%;
+      }
+    }
   }
 
   .tour-strip {
@@ -386,10 +572,8 @@
     gap: 1.25rem;
     list-style: none;
     margin: 0;
-    padding: 0.25rem 0.25rem 1.25rem;
-    overflow-x: auto;
-    scroll-snap-type: x proximity;
-    scrollbar-width: thin;
+    padding: 0.25rem clamp(1rem, 4vw, 2.5rem) 1.25rem;
+    width: max-content;
   }
 
   .tour-strip li {
@@ -397,6 +581,8 @@
     scroll-snap-align: start;
   }
 
+  /* The aspect ratio is declared now and the picture arrives later, so
+     ticket 16 changes no layout when it lands. */
   .slot {
     aspect-ratio: 9 / 16;
     border-radius: 1.25rem;
@@ -421,91 +607,87 @@
     margin: 0 0 0.4rem;
   }
 
+  /* Ink rather than muted, and the size carries the hierarchy instead of the
+     colour. These captions are the one run of text on the page with no scrim
+     under them: the strip is full-bleed so that the aura is at full strength
+     around the frames, which is the whole point of the exception, and muted
+     text measured 4.18 against the blue blob at some points of its drift.
+     Scrimming the strip would give back the flat band this section exists to
+     break. */
   .tour-strip p {
-    color: var(--muted);
+    color: var(--ink);
     font-size: 0.9375rem;
     margin: 0;
   }
 
   /* ---- Features -------------------------------------------------------------- */
 
+  /* No cards here, deliberately. Ticket 09 gave features and acquisition the
+     same auto-fill grid of bordered tinted boxes, and two near-identical
+     grids four sections apart is most of why the page read as a template.
+     Acquisition keeps the cards, because a channel is a discrete thing a
+     person picks between; a feature is a sentence, and sentences do not need
+     boxes drawn round them. */
   .group {
-    margin-bottom: 3rem;
+    margin-bottom: 2.75rem;
   }
 
   .group:last-child {
     margin-bottom: 0;
   }
 
+  /* No text-transform, for the reason the h1 carries the same note: innerText
+     reports the transformed casing, and a group name that is also a line of
+     shipped copy would come back from the copy tests reworded. It is also
+     not set as a small-caps label, because five of those stacked down one
+     section is the templated rhythm this ticket is undoing. */
   .group h3 {
-    font-size: clamp(1.2rem, 2.2vw, 1.5rem);
-    margin: 0 0 1.25rem;
+    font-size: 1.0625rem;
+    font-weight: 600;
+    color: var(--ink);
+    margin: 0 0 1rem;
   }
 
-  /* min() around the track floor, because a bare minmax(17rem, 1fr) is a
-     promise the grid keeps even when it cannot: at 200% text 17rem is 544px,
-     wider than the phone holding it, and the row answers by pushing the whole
-     document sideways. The min() lets the column fall back to the width
-     actually available while leaving the 17rem intent untouched everywhere
-     it fits. */
-  .cards {
+  /* Two columns of unequal width, against acquisition's equal auto-fill
+     cards. Losing the boxes was most of separating these two sections, but
+     both were still laying out on the same even two-up track, back to back,
+     in the same body column. An asymmetric pair reads as a column of prose
+     with notes beside it rather than as another grid. */
+  .entries {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(min(17rem, 100%), 1fr));
-    gap: 1rem;
+    grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr);
+    gap: 1.1rem 2.5rem;
   }
 
-  .cards p {
+  .entries p {
     margin: 0;
-    padding: 1.25rem 1.4rem;
-    border-radius: 1rem;
-    border: 1px solid var(--line);
-    background: var(--surface);
     font-size: 0.9375rem;
     color: var(--muted);
+    max-width: 42ch;
   }
 
   /* The lead stays inline: `rest` opens with its own separator, sometimes a
      comma, and a block lead would put a line break where the sentence needs
-     none (the copy tests read the paragraph back as one line). The emphasis
-     is weight and ink against the card's muted body. */
-  .cards p strong {
+     none (the copy tests read the paragraph back as one line). With the boxes
+     gone, weight and ink are the whole of the emphasis. */
+  .entries p strong {
     color: var(--ink);
     font-weight: 600;
   }
 
-  /* Two tinted cards per grid, so the grids are not a wall of one surface. */
-  .cards p:nth-child(4n + 1) {
-    background:
-      radial-gradient(140% 120% at 0% 0%, var(--blob-blue), transparent 55%),
-      var(--surface);
-  }
-
-  .cards p:nth-child(4n + 3) {
-    background:
-      radial-gradient(140% 120% at 100% 100%, var(--blob-pink), transparent 55%),
-      var(--surface);
-  }
-
-  /* A group's intro speaks for the group, not from a card. */
-  .cards p.plain {
+  /* A group's intro speaks for the group, not from beside it. */
+  .entries p.plain {
     grid-column: 1 / -1;
-    border: none;
-    background: none;
-    padding: 0;
     max-width: 60ch;
     font-size: 1.0625rem;
+    color: var(--ink);
+    margin-bottom: 0.4rem;
   }
 
   /* ---- Acquisition ------------------------------------------------------------- */
 
-  .acquisition-intro {
-    font-size: clamp(1.1rem, 2vw, 1.3rem);
-    max-width: 44ch;
-    margin-bottom: 2rem;
-  }
-
   .acquisition-action {
-    margin-bottom: 3rem;
+    margin: 0 0 2.5rem;
   }
 
   .android {
@@ -513,7 +695,12 @@
     max-width: 60ch;
   }
 
-  /* Same floor problem as .cards above, one size up. */
+  /* min() around the track floor, because a bare minmax(19rem, 1fr) is a
+     promise the grid keeps even when it cannot: at 200% text 19rem is 608px,
+     wider than the phone holding it, and the row answers by pushing the whole
+     document sideways. The min() lets the column fall back to the width
+     actually available while leaving the 19rem intent untouched everywhere
+     it fits. */
   .channels {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(min(19rem, 100%), 1fr));
@@ -528,6 +715,21 @@
     border-radius: 1rem;
     border: 1px solid var(--line);
     background: var(--surface);
+  }
+
+  /* Two tinted cards per grid, so the row is not a wall of one surface. The
+     tint tokens are the text-safe pair rather than the aura's: --blob-pink
+     under --muted measured 3.34 in dark (ticket 17). */
+  .channels li:nth-child(4n + 1) {
+    background:
+      radial-gradient(140% 120% at 0% 0%, var(--tint-blue), transparent 55%),
+      var(--surface);
+  }
+
+  .channels li:nth-child(4n + 3) {
+    background:
+      radial-gradient(140% 120% at 100% 100%, var(--tint-pink), transparent 55%),
+      var(--surface);
   }
 
   .channels strong {
@@ -555,14 +757,31 @@
     margin-top: 1.5rem;
   }
 
-  /* ---- Mobile ------------------------------------------------------------------ */
+  /* ---- Narrow ------------------------------------------------------------------ */
 
-  @media (max-width: 48rem) {
-    .overview-columns {
-      grid-template-columns: 1fr;
-      gap: 1rem;
+  /* The rail stops being a rail. Below this the two columns stack, and a
+     heading that stuck to the top of the window while its own content
+     scrolled past would just be a heading in the way. */
+  @media (max-width: 60rem) {
+    .split {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 1.25rem;
     }
 
+    .rail {
+      position: static;
+    }
+
+    .standfirst {
+      max-width: 60ch;
+    }
+
+    .entries {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+
+  @media (max-width: 48rem) {
     .hero {
       min-height: 92dvh;
     }

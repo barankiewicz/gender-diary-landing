@@ -94,3 +94,65 @@ Content reads, the language links still switch language, the gateway at `/`
 becomes a page offering both languages, and the action keeps its real href. The
 theme control is hidden rather than shown broken, because it cannot work without
 the script: `base.css` only reveals it once `app.html` has set `data-js`.
+
+## Re-verified after ticket 17
+
+Date: 2026-08-12
+Same browser, same two viewports.
+
+Ticket 17 rebuilt the composition, so the evidence above was about a page that
+no longer exists. What follows is what was re-run against the new one. The
+screen reader box is untouched and still open: nothing above changed that, and
+no screen reader has been run against this site yet.
+
+**The automated checks in `tests/site.test.mjs` all pass unchanged in intent.**
+The one edit was the selector that finds section headings, from
+`main section > h2` to `main section h2`, because the heading now sits inside
+the sticky rail. It is still the only `h2` a section has.
+
+**Text size, redone by hand.** At 200% on a 390px screen both pages in both
+languages still sit at zero horizontal overflow, and the run found one real
+regression on the way. Removing `overflow: clip` from the hero, which the aura
+no longer needs, exposed a break the clip had been hiding: the headline's
+`clamp()` floor of `2.4rem` is 76.8px at 200%, which sets the word "transition"
+wider than a 390px phone, and the hero's grid track grew to min-content to fit
+it. Before this ticket the word was cut off instead of scrolling, which is not
+better. The floor now falls back through `min(2.4rem, 12vw)`, the action's side
+padding through `min(2.1rem, 8vw)`, and `.hero-inner` takes `min-width: 0`.
+
+**Contrast, redone by hand and then automated.** The palette ratios above are
+unchanged. What changed is that they stopped being the whole story: the aura is
+a page-wide fixed layer now, so a paragraph sits on `--page` plus whatever has
+drifted behind it, and a test that reads tokens cannot see that.
+
+So the checking is done in pixels. `tests/site.test.mjs` paints every string
+transparent, photographs the viewport at four points of the aura's drift as it
+walks down each page, decodes the screenshot and measures the real background
+behind every word against the colour that word is painted in. It runs over both
+pages, in both themes, at 100 and 200 percent, and holds each element to the
+bar its own size earns: 4.5:1, or 3:1 once it is large.
+
+That found two failures that no palette check could have:
+
+- `--muted` on the dark feature cards measured 3.34:1, and had done since
+  ticket 09 shipped that grid. The decorative `--blob-*` pair is now separate
+  from a `--tint-*` pair meant for a surface that carries text, at 0.16 rather
+  than 0.42 in dark, which puts the same text at 5.7:1.
+- The tour captions measured 4.18:1 against the blue blob at some points of its
+  drift. The tour is deliberately full-bleed with no scrim, so the captions are
+  set in `--ink` instead and the size carries the hierarchy the colour used to.
+
+**Reduced motion, re-run against everything ticket 17 added.** With
+`prefers-reduced-motion: reduce` the tour does not pin and does not pan, and
+falls back to a strip that scrolls horizontally, so the section is still
+readable rather than merely still. The hero's drawn stroke resolves to
+`animation-name: none` with no dash on it, which means it is finished rather
+than frozen part way. Every revealed item sits at `opacity: 1`. The aura drift
+and the hero entrance behave as they did. All of this is asserted.
+
+**Without JavaScript, re-run.** Everything in the section above still holds,
+and the motion now does too: with scripting switched off in Chromium the tour
+still pins and pans, the per-item reveals still run and the stroke still draws,
+because all three are CSS. That is asserted. Browsers without scroll-driven
+animations get `src/lib/reveal.ts`, an IntersectionObserver of about 40 lines,
+which stands down entirely where the CSS works. Both branches are tested.
