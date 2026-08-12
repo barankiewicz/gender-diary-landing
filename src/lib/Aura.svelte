@@ -23,39 +23,42 @@
     const context = canvas.getContext('2d');
     if (!context) return;
 
-    const pointerEvent = 'gd-hero-pointer';
-    const pointer = { x: 0, y: 0, targetX: 0, targetY: 0 };
     const blobs = [
       {
         x: 0.8,
         y: 0.18,
         r: 0.38,
         colorToken: '--blob-pink',
-        swayX: 0.022,
-        swayY: 0.018,
+        swayX: 0.07,
+        swayY: 0.045,
+        speed: 0.17,
+        phaseOffset: 0,
       },
       {
         x: 0.18,
         y: 0.84,
         r: 0.36,
         colorToken: '--blob-blue',
-        swayX: 0.018,
-        swayY: 0.021,
+        swayX: 0.055,
+        swayY: 0.065,
+        speed: 0.13,
+        phaseOffset: 7,
       },
       {
         x: 0.62,
         y: 0.46,
         r: 0.24,
         colorToken: '--blob-white',
-        swayX: 0.016,
-        swayY: 0.014,
+        swayX: 0.045,
+        swayY: 0.04,
+        speed: 0.11,
+        phaseOffset: 13,
       },
     ];
 
     let cssWidth = 1;
     let cssHeight = 1;
     let raf = 0;
-    let t = 0;
     let palette = getComputedStyle(document.documentElement);
 
     const refreshPalette = () => {
@@ -75,22 +78,15 @@
       context.globalCompositeOperation = 'screen';
     };
 
-    const onPointer = (event: Event) => {
-      const detail = (event as CustomEvent<{ x: number; y: number; active: boolean }>).detail;
-      pointer.targetX = detail?.active ? detail.x : 0;
-      pointer.targetY = detail?.active ? detail.y : 0;
-    };
-
     const drawBlob = (
       blob: (typeof blobs)[number],
       phase: number,
-      shiftX: number,
-      shiftY: number,
       palette: CSSStyleDeclaration,
     ) => {
-      const cx = (blob.x + Math.sin(phase * 0.8) * blob.swayX + shiftX) * cssWidth;
-      const cy = (blob.y + Math.cos(phase * 0.75) * blob.swayY + shiftY) * cssHeight;
-      const radius = blob.r * Math.min(cssWidth, cssHeight);
+      const cx = (blob.x + Math.sin(phase * blob.speed) * blob.swayX) * cssWidth;
+      const cy = (blob.y + Math.cos(phase * blob.speed * 0.73) * blob.swayY) * cssHeight;
+      const pulse = 1 + Math.sin(phase * blob.speed * 0.61) * 0.055;
+      const radius = blob.r * pulse * Math.min(cssWidth, cssHeight);
       const gradient = context.createRadialGradient(cx, cy, radius * 0.16, cx, cy, radius);
       const color =
         palette.getPropertyValue(blob.colorToken).trim() || 'rgba(255, 255, 255, 0.2)';
@@ -104,16 +100,11 @@
       context.fill();
     };
 
-    const frame = () => {
-      raf = requestAnimationFrame(frame);
-      t += 0.0042;
-      pointer.x += (pointer.targetX - pointer.x) * 0.055;
-      pointer.y += (pointer.targetY - pointer.y) * 0.055;
-
+    const frame = (now: number) => {
+      const phase = now / 1000;
       context.clearRect(0, 0, cssWidth, cssHeight);
-      drawBlob(blobs[0], t, pointer.x * 0.03, pointer.y * 0.02, palette);
-      drawBlob(blobs[1], t + 1.8, pointer.x * 0.018, pointer.y * 0.028, palette);
-      drawBlob(blobs[2], t + 3.4, pointer.x * 0.014, pointer.y * 0.016, palette);
+      for (const blob of blobs) drawBlob(blob, phase + blob.phaseOffset, palette);
+      raf = requestAnimationFrame(frame);
     };
 
     const themeObserver = new MutationObserver(refreshPalette);
@@ -125,16 +116,14 @@
     refreshPalette();
     resize();
     window.addEventListener('resize', resize, { passive: true });
-    window.addEventListener(pointerEvent, onPointer as EventListener);
     canvasActive = true;
-    frame();
+    raf = requestAnimationFrame(frame);
 
     return () => {
       canvasActive = false;
       cancelAnimationFrame(raf);
       themeObserver.disconnect();
       window.removeEventListener('resize', resize);
-      window.removeEventListener(pointerEvent, onPointer as EventListener);
     };
   });
 </script>
@@ -184,10 +173,9 @@
     will-change: transform;
   }
 
-  /* Both gutters carry colour now that the layer is the whole viewport rather
-     than the hero: blue off the top right, pink off the bottom left, and the
-     theme's neutral between them. The hero still meets blue first, on the side
-     its text does not use. */
+    /* Both gutters carry colour now that the layer is the whole viewport rather
+      than the hero: pink leads at the top right, blue trails at the bottom
+      left, and the theme's neutral sits between them. */
   .blob-a {
     width: 55vw;
     height: 55vw;

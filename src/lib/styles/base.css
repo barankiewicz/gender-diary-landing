@@ -89,7 +89,7 @@
     --grad-a: #5bcefa;
     --grad-b: #f5a9b8;
     --blob-blue: rgba(91, 206, 250, 0.3);
-    --blob-pink: rgba(245, 169, 184, 0.58);
+    --blob-pink: rgba(245, 169, 184, 0.52);
     --blob-white: rgba(255, 247, 251, 0.18);
     --tint-blue: rgba(91, 206, 250, 0.13);
     --tint-pink: rgba(245, 169, 184, 0.2);
@@ -116,7 +116,7 @@
   --grad-a: #5bcefa;
   --grad-b: #f5a9b8;
   --blob-blue: rgba(91, 206, 250, 0.3);
-  --blob-pink: rgba(245, 169, 184, 0.58);
+  --blob-pink: rgba(245, 169, 184, 0.52);
   --blob-white: rgba(255, 247, 251, 0.18);
   --tint-blue: rgba(91, 206, 250, 0.13);
   --tint-pink: rgba(245, 169, 184, 0.2);

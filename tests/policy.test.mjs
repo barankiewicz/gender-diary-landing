@@ -17,8 +17,10 @@
 
    Run with `npm test`, which builds first. */
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
 import { readdir, readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
+import config from '../svelte.config.js';
 import { createReporter, launchChromium, serveBuild } from './browser-harness.mjs';
 
 const buildDirectory = fileURLToPath(new URL('../build', import.meta.url));
@@ -119,6 +121,27 @@ test('only the two known things are parsed before the policy arrives', async () 
     const links = unpoliced.match(/<link/g) ?? [];
     assert.equal(links.length, 1, `${path} loads something ungoverned beyond the font`);
     assert.match(unpoliced, /dm-sans/, `${path}: the ungoverned load is not the font`);
+  }
+});
+
+test('the policy permits the pre-paint theme bootstrap', async () => {
+  /* Vite sends the CSP as a response header in development, so the bootstrap
+     is governed there even though the static host receives it before the
+     policy meta element. Hash the source rather than copying a digest: a
+     whitespace-only edit changes what the browser authorises. */
+  const source = await readFile(fileURLToPath(new URL('../src/app.html', import.meta.url)), 'utf8');
+  const bootstrap = source.match(/<script>([\s\S]*?)<\/script>/)?.[1];
+  assert.ok(bootstrap, 'app.html has no pre-paint theme bootstrap');
+
+  const hash = `sha256-${createHash('sha256').update(bootstrap).digest('base64')}`;
+  assert.ok(
+    config.kit.csp.directives['script-src'].includes(hash),
+    'the configured response policy does not permit the theme bootstrap',
+  );
+  for (const path of pages) {
+    const html = await readFile(`${buildDirectory}${path}index.html`, 'utf8');
+    const csp = html.match(/<meta http-equiv="content-security-policy" content="([^"]*)"/i)?.[1];
+    assert.ok(csp?.includes(`'${hash}'`), `${path} CSP does not permit the theme bootstrap`);
   }
 });
 

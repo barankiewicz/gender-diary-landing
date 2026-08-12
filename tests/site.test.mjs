@@ -2177,10 +2177,32 @@ for (const scheme of ['light', 'dark']) {
   });
 }
 
+test('pointer movement does not move the hero stroke', async () => {
+  const { context, page } = await visitor({});
+  try {
+    await page.goto(`${base}/en/`);
+    await page.waitForLoadState('networkidle');
+    const stroke = page.locator('.flag-ink');
+    const before = await stroke.evaluate((node) => getComputedStyle(node).transform);
+
+    await page.mouse.move(20, 100);
+    await page.mouse.move(1200, 600);
+    await new Promise((resolve) => setTimeout(resolve, 250));
+
+    assert.equal(
+      await stroke.evaluate((node) => getComputedStyle(node).transform),
+      before,
+      'the hero stroke still follows the pointer',
+    );
+  } finally {
+    await context.close();
+  }
+});
+
 test('the motion system uses one runtime dependency and no duplicate runtime', async () => {
   /* Ticket 18 introduces motion.dev on purpose: one runtime dependency, used
-     for the hero stroke choreography and pointer spring interaction, with the
-     rest of the page still CSS or hand-rolled. */
+  for the hero stroke choreography, with the ambient page movement still
+  CSS or hand-rolled. */
   const manifest = JSON.parse(
     await readFile(fileURLToPath(new URL('../package.json', import.meta.url)), 'utf8'),
   );
