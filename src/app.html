@@ -3,6 +3,26 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <!-- The referrer policy, in the page rather than only in a response header,
+         because lh.pl may or may not send the header static/.htaccess asks for
+         and this one arrives either way (ticket 11). Start journal hands the
+         Journal no referrer, which is the same promise the link itself makes by
+         carrying no campaign parameter and no state. -->
+    <meta name="referrer" content="no-referrer" />
+    <!-- The two things below are the whole of this document that the content
+         policy does not govern, and they sit above SvelteKit's head block
+         deliberately. That block opens with the policy, and a policy in a meta
+         element governs what is parsed after it and nothing before it - but a
+         classic script placed after the stylesheet link waits for the
+         stylesheet before it runs, which delays hydration and leaves the theme
+         control showing the wrong choice after a reload. Both are written
+         here, in a source file, rather than acquired at run time, which is
+         what the policy exists to prevent. tests/policy.test.mjs holds the
+         line at these two.
+
+         Do not name that placeholder in prose anywhere in this file: the build
+         replaces its first occurrence, so a mention in a comment is where the
+         whole head lands. (Ticket 11.) -->
     <!-- The one font on the site, self-hosted (ticket 09: no remote asset).
          Preloaded because every visible string is set in it, so the swap it
          avoids would be the whole page. -->

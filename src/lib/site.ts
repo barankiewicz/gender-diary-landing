@@ -1,8 +1,16 @@
 import en from '../../messages/en.json' with { type: 'json' };
 import pl from '../../messages/pl.json' with { type: 'json' };
 
-/** Placeholder until launch configuration is approved (spec, further notes). */
-export const SITE_ORIGIN = 'https://genderdiary.barankiewicz.dev';
+/** Where the site is served from. Alicja created this subdomain on the lh.pl
+    account on 2026-08-12 and it is what ticket 11 deploys to, so it is a real
+    address rather than the placeholder it started as - but still a working
+    identity, not a launch decision. Ticket 12 is where a chosen name lands,
+    and it weighs what a domain says about its reader in a browser history.
+
+    The canonical link, both alternates, `x-default`, the sitemap and the
+    robots policy are all derived from this, so it changes here once. The copy
+    in tests/site.test.mjs is deliberate and changes with it. */
+export const SITE_ORIGIN = 'https://gender-diary.barankiewicz.dev';
 
 /** The production Journal, which has an origin of its own and shares nothing
     with this one (ADR-0019 in the Journal repository). Provisional in the same

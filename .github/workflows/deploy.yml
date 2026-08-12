@@ -1,0 +1,156 @@
+# Ticket 11. Everything this repository publishes goes out through here, and
+# nothing publishes any other way: lh.pl is managed hosting, so a deploy is an
+# FTP upload of built files and there is no server-side build to disagree with.
+#
+# What this workflow can reach is the point of it. The Journal is a different
+# origin, on a different host, in a different repository, with credentials this
+# workflow has never seen (ADR-0019). The three secrets below open one shared
+# hosting account, and the target directory inside that account is checked
+# before anything is uploaded, because the sites of other people's projects
+# live in neighbouring directories on it.
+name: build, check and deploy
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# One deploy at a time, and never cancelled halfway. FTP has no atomic swap:
+# a run that stops in the middle leaves the site half old and half new, so the
+# only safe thing to do with a second push is wait for the first to finish.
+concurrency:
+  group: deploy-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  check:
+    name: types and browser tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+      - run: npm run check
+      # The tests drive a real Chromium against the built files, and the
+      # harness takes the binary from CHROMIUM_PATH rather than guessing.
+      - run: npx playwright-core install --with-deps chromium
+      - run: echo "CHROMIUM_PATH=$(node -p "require('playwright-core').chromium.executablePath()")" >> "$GITHUB_ENV"
+      - run: npm test
+
+  links:
+    name: every link the site offers
+    # Deliberately not something `deploy` waits on. This job asks other
+    # people's servers whether a link still works, so it can fail for reasons
+    # that have nothing to do with the commit, and a site whose copy is
+    # correct should still ship while the Journal origin it points at is being
+    # brought up. A red run here means a visitor would follow a dead link, and
+    # that is worth being told loudly and separately.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+      - run: npm run links
+
+  preview:
+    name: preview build
+    if: github.ref != 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+      # Plain `npm run build`, with SITE_ENV unset, which is what puts a robots
+      # noindex on every page and ships no sitemap (ticket 14). The exclusion
+      # is in the files themselves, so it survives being downloaded, unzipped
+      # and served from anywhere.
+      - run: npm run build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: preview-${{ github.sha }}
+          path: build/
+          # .htaccess is a dotfile, and this action drops those unless told.
+          include-hidden-files: true
+
+  deploy:
+    name: publish to lh.pl
+    # A pull request's ref is refs/pull/N/merge, so this excludes them too.
+    if: github.ref == 'refs/heads/main'
+    needs: check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+
+      # The blast radius of this workflow is one directory on a shared account.
+      # An unset or root target would make the upload mirror over everything on
+      # it, including sites belonging to other projects, so it fails closed.
+      - name: Refuse a deploy that has no directory of its own
+        env:
+          TARGET: ${{ vars.FTP_SERVER_DIR }}
+        run: |
+          case "$TARGET" in
+            '' | '/' | 'public_html/' | '/public_html/')
+              echo "FTP_SERVER_DIR is $TARGET, which is the whole account rather than this site."
+              echo "Set it to this site's directory, ending in a slash. scripts/lhpl-setup.sh does that."
+              exit 1
+              ;;
+            */) ;;
+            *)
+              echo "FTP_SERVER_DIR must end in a slash, or the upload lands beside the directory rather than in it."
+              exit 1
+              ;;
+          esac
+
+      - run: npm run build:production
+
+      # Ticket 14's warning, enforced. A production deploy that ran the preview
+      # build would publish the real site with a noindex on every page: nothing
+      # would look wrong, and the site would simply never appear in a search
+      # result. It is the one deploy mistake this repository cannot recover
+      # from by noticing.
+      - name: Refuse to publish a build that hides itself from search
+        run: |
+          grep -q '^Sitemap: ' build/robots.txt || {
+            echo "robots.txt names no sitemap, so this is a preview build. Use npm run build:production."
+            exit 1
+          }
+          ! grep -rq 'name="robots" content="noindex"' build || {
+            echo "a built page carries a robots noindex, so this is a preview build."
+            exit 1
+          }
+
+      # build/ is the whole payload and nothing else: adapter-static writes the
+      # public files there and no source, README or tooling ever reaches it, so
+      # there is no staging copy to keep in step with the repository.
+      - uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          server-dir: ${{ vars.FTP_SERVER_DIR }}
+          local-dir: ./build/
+          # lh.pl answers FTPS on 21 and its certificate does not match the
+          # hostname, which is why the check is loose here as it is for the
+          # other sites on this account.
+          protocol: ftps
+          security: loose
+          port: 21
+          state-name: .ftp-deploy-sync-state.json

@@ -14,7 +14,7 @@ import { copyBlocks, sentences } from './copy-source.mjs';
 /* The origin the built pages name in their canonical and alternate links. It
    is provisional (spec, further notes), and changing it should be a deliberate
    edit here as well as in src/lib/site.ts. */
-const SITE_ORIGIN = 'https://genderdiary.barankiewicz.dev';
+const SITE_ORIGIN = 'https://gender-diary.barankiewicz.dev';
 
 /* The production Journal, on the origin it has to itself. Provisional in the
    same way, and decided by the Journal repository's ticket 01. The exact
@@ -317,6 +317,14 @@ test('the theme control overrides the system theme and is remembered', async () 
 
     await page.reload();
     assert.equal(await themeNow(page), 'dark');
+    /* The theme is right before this line and the control catches up after it.
+       app.html stamps the theme before first paint; the button learns what it
+       is showing when the component mounts, which is after the dynamic imports
+       land, so reading aria-pressed as soon as reload returns is a race - the
+       same one the keyboard test above waits out, and the same fix. Ticket 11
+       lost it consistently by moving hydration about three milliseconds later,
+       which is the sort of margin this assertion was winning by. */
+    await page.waitForLoadState('networkidle');
     assert.equal(
       await page.getByRole('button', { name: 'Dark' }).getAttribute('aria-pressed'),
       'true',

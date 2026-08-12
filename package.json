@@ -13,7 +13,8 @@
     "build:production": "SITE_ENV=production npm run build",
     "preview": "vite preview",
     "check": "svelte-check --tsconfig ./tsconfig.json",
-    "test": "npm run build && node tests/site.test.mjs"
+    "links": "npm run build && node scripts/check-links.mjs",
+    "test": "npm run build && node tests/site.test.mjs && node tests/policy.test.mjs"
   },
   "devDependencies": {
     "@sveltejs/adapter-static": "^3.0.0",

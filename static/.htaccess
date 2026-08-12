@@ -1,0 +1,43 @@
+# Ticket 11. lh.pl is Apache managed hosting with no shell and no vhost of our
+# own, so this file is the only place the site can ask for a response header.
+# It is a request, not a guarantee: mod_headers can be off on a shared account,
+# and nothing here can be trusted until it has been read off the live response
+# with `curl -sSI https://<origin>/`.
+#
+# So the site does not depend on it. The Content-Security-Policy that matters
+# and the Referrer-Policy both ship inside every page as meta elements, which
+# any host that serves the file at all will carry. What is here is the part a
+# meta element cannot express, plus a header copy of the policy that can be.
+#
+# Do not repeat the page's whole policy as a header here. It allows three
+# inline scripts by hash, and two of those hashes are SvelteKit's and differ
+# from page to page, so one header for the whole site could not name them.
+# Every policy that arrives has to allow a resource for it to load, so a
+# header saying script-src 'self' would block the page's own scripts however
+# correct the meta element next to it was.
+#
+# The IfModule guard is not decoration. Header directives with mod_headers
+# missing are a configuration error, and Apache answers a configuration error
+# in .htaccess with 500 on every request - the whole site down, to add a header.
+<IfModule mod_headers.c>
+  # frame-ancestors is ignored when it arrives in a meta element, so this is
+  # the only way the site can refuse to be framed. It is a policy of its own
+  # rather than a copy of the page's: two policies both apply, and this one
+  # carries the single directive the page cannot carry itself.
+  Header always set Content-Security-Policy "frame-ancestors 'none'"
+
+  # The header form of the meta element in src/app.html. Whichever arrives, a
+  # visitor who follows Start journal hands the Journal no referrer, and the
+  # Journal learns nothing about where they came from.
+  Header always set Referrer-Policy "no-referrer"
+</IfModule>
+
+# The deploy leaves its incremental-sync bookkeeping in this directory, which
+# is the document root, so without this it would be a public URL. It lists
+# every file and its hash - nothing secret, and nothing anyone visiting the
+# site is owed either.
+<IfModule mod_authz_core.c>
+  <Files ".ftp-deploy-sync-state.json">
+    Require all denied
+  </Files>
+</IfModule>
