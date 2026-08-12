@@ -19,9 +19,12 @@ const SITE_ORIGIN = 'https://genderdiary.barankiewicz.dev';
    src/lib/site.ts, and changing it there means changing it here. */
 const JOURNAL_URL = 'https://app.genderdiary.barankiewicz.dev/';
 
-/** The four Android channels, in the order the page lists them, which is
-    alphabetical so that no position reads as a recommendation. */
-const CHANNELS = ['Aurora', 'F-Droid', 'Google Play', 'Obtainium'];
+/** The four Android channels, in the order the page lists them. The order is
+    the opinion: the three that do not report an install to Google come first,
+    alphabetically among themselves because nothing separates them, and Google
+    Play comes last. The copy says so out loud rather than leaving the position
+    to carry it. */
+const CHANNELS = ['Aurora', 'F-Droid', 'Obtainium', 'Google Play'];
 
 /** What a reader sees of the acquisition section, per language. */
 const ACQUISITION = {
@@ -332,7 +335,7 @@ for (const locale of ['en', 'pl']) {
     }
   });
 
-  test(`${locale}: Aurora names the Play package and Obtainium names its source`, async () => {
+  test(`${locale}: Aurora names the Play build and Obtainium names its source`, async () => {
     const { context, page } = await visitor({});
     try {
       await page.goto(`${base}/${locale}/`);
@@ -341,12 +344,37 @@ for (const locale of ['en', 'pl']) {
       const aurora = await entries.nth(CHANNELS.indexOf('Aurora')).innerText();
       assert.ok(
         aurora.includes('Google Play'),
-        'Aurora was described without saying which package it installs',
+        'Aurora was described without saying which build it installs',
       );
 
+      /* The source, and only the source. Obtainium's artifact-name matching is
+         deliberately not on the page: how to point a package manager at a
+         repository is that package manager's documentation, and this section
+         is about the product. */
       const obtainium = await entries.nth(CHANNELS.indexOf('Obtainium')).innerText();
       assert.ok(obtainium.includes('GitHub'), 'Obtainium was described without naming its source');
-      assert.ok(obtainium.includes('APK'), 'Obtainium was described without the artifact rule');
+    } finally {
+      await context.close();
+    }
+  });
+
+  test(`${locale}: Google Play is listed last, and the page says why`, async () => {
+    const { context, page } = await visitor({});
+    try {
+      await page.goto(`${base}/${locale}/`);
+      const section = acquisitionSection(page, locale);
+
+      /* The opinion is the point of the ordering, so a silent reorder back to
+         alphabetical has to fail here rather than pass quietly. */
+      const entries = section.getByRole('listitem');
+      const last = await entries.nth(CHANNELS.length - 1).innerText();
+      assert.ok(last.startsWith('Google Play'), 'Google Play was not the last channel listed');
+
+      const play = await entries.nth(CHANNELS.indexOf('Google Play')).innerText();
+      assert.ok(
+        play.includes('Google'),
+        'the Play entry did not say what installing from Play tells Google',
+      );
     } finally {
       await context.close();
     }

@@ -7,28 +7,28 @@
   "themeLight": "Jasny",
   "themeDark": "Ciemny",
   "sectionOverview": "Czym jest Gender Diary",
-  "sectionPrivacy": "Co chroni",
+  "sectionPrivacy": "Co chroni, a czego nie",
   "sectionAcquisition": "Skąd je wziąć",
   "acquisitionIntro": "Gender Diary działa w przeglądarce. Otwiera się od razu, bez instalacji i bez konta.",
   "startJournal": "Otwórz dziennik",
-  "acquisitionAndroid": "Aplikacji na Androida jeszcze nie ma. Kiedy powstanie, ma trafić do tych czterech miejsc i żadnego z nich nie polecamy bardziej niż pozostałych. Kiedy któreś zacznie działać, zmieni się tutaj w link.",
+  "acquisitionAndroid": "Aplikacji na Androida jeszcze nie ma. Kiedy powstanie, będzie do wzięcia z tych czterech miejsc. Google Play jest tu ostatni i nie bez powodu. Każde z nich zmieni się tutaj w link, jak tylko zacznie działać.",
   "channelStatus": "Jeszcze niedostępne.",
   "channels": [
     {
       "name": "Aurora",
-      "note": "Aurora instaluje ten sam pakiet co Google Play. To inny sposób, żeby go zainstalować, a nie osobna wersja aplikacji."
+      "note": "Ta sama wersja co z Google Play, tylko bez twojego konta Google przy pobieraniu."
     },
     {
       "name": "F-Droid",
-      "note": "Pakiet miałby trafić do głównego repozytorium F-Droida. F-Droid buduje u siebie z kodu źródłowego to, co rozdaje, zamiast brać gotowy plik od nas."
-    },
-    {
-      "name": "Google Play",
-      "note": "Instalacja przez Google Play znaczy, że Google wie, że aplikacja jest na twoim telefonie."
+      "note": "Buduje aplikację u siebie z kodu źródłowego, więc nie musisz ufać plikowi, który przyszedł ode mnie."
     },
     {
       "name": "Obtainium",
-      "note": "Obtainium śledzi wydania tego projektu na GitHubie i instaluje podpisany plik APK. Wybiera go po nazwie i to ona odsiewa wersje deweloperskie i niepodpisane. Adres strony i nazwa tego pliku ustalą się przy pierwszym wydaniu."
+      "note": "Śledzi wydania tego projektu na GitHubie i sam pilnuje aktualizacji."
+    },
+    {
+      "name": "Google Play",
+      "note": "Działa i mówi Google, że masz w telefonie aplikację dla osób trans. Żadne ustawienie w Gender Diary tego nie zmieni."
     }
   ],
   "copyPending": "Tekst w przygotowaniu."

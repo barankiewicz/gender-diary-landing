@@ -1,6 +1,6 @@
 # Product Marketing Context
 
-**Document version:** v6
+**Document version:** v7
 **Last updated:** 2026-08-12
 
 Read this before writing any copy for this site. It settles who the copy is for,
@@ -138,8 +138,10 @@ correction, and it is a worse argument than showing our own source code.
   judgement and no advice.
 - Data leaves only when the person exports it, and the Archive is encrypted under a
   password they choose before it goes anywhere.
-- The free-software installation routes are presented as equals. F-Droid and
-  Obtainium are not a lesser tier below Play.
+- The free-software installation routes are the ones the site recommends. Google Play
+  is listed last and the page says why: a Play install tells Google there is a trans
+  app on that phone, tied to that account, and nothing in the app changes it. Aurora,
+  F-Droid and Obtainium rank equally above it, since nothing separates the three.
 - It is built for the bad days: one action logs a mood, and details can come later or
   not at all.
 
@@ -216,6 +218,7 @@ source code, you can check.
   be wrong, and the copy should match.
 - Urgency: today only, don't miss, limited, act now, get started before.
 - "Users". Write "you", or "people".
+- "We", "us", "our". One person. See the voice section below.
 - "Journey" as a load-bearing word. Onboarding uses it once as a button, which is
   fine; a landing page that leans on it sounds like every other wellness product.
 
@@ -253,9 +256,26 @@ ticket 03 should decide which and say so, rather than letting a reader meet both
 written by someone who has thought carefully about the stakes and is not performing
 that fact.
 
-**Style:** second person. Short sentences. Concrete nouns. State the mechanism rather
-than the adjective, and put the limit in the same breath as the claim, because a
-conceded limit is what makes the rest believable to this audience.
+**Who is speaking: one person, in the first person singular.** This is one person's
+project, and "we" for a one-person project is the single clearest tell that turns a
+page into a company with a support desk. Write "I will never ask for any of it", not
+"we will not ask". Every "we", "us" and "our" on this site is an error.
+
+The site does not name or identify that person, and does not state that they are trans.
+Both are deliberate. The copy shows who wrote it by knowing things that only somebody
+inside would know, which is more convincing than the claim and costs the author less.
+So: no byline, no "made by a trans person for trans people", and no about-me section.
+The recognition lives in sentences like "a day where all you managed was a mood is
+still a day you logged".
+
+Polish has a complication English does not: the first person singular is gendered in
+the past tense and in adjectives, exactly as the second person is. `content/pl/landing.md`
+carries the rule. Present and future only.
+
+**Style:** second person for the reader, first person singular for the project. Short
+sentences. Concrete nouns. State the mechanism rather than the adjective, and put the
+limit in the same breath as the claim, because a conceded limit is what makes the rest
+believable to this audience.
 
 **Personality:** exact, calm, unsentimental, respectful, self-limiting.
 
@@ -282,6 +302,27 @@ rules:
 - No emoji, no em dashes, no rule-of-three lists that were not three things to begin
   with.
 - No claim without shipped evidence, per the table below.
+- **No talking about the copy on the copy.** "This site will not imply that", "those are
+  different sentences a reader deserves to have kept apart", "this page is longer than a
+  privacy page usually is" - all of it is the page congratulating itself on its own
+  carefulness, which is a sales move wearing honesty as a costume. Being careful is the
+  job. Announcing it is the tell. State the thing plainly and let the reader notice.
+- **No epigram at the end of every paragraph.** One good closing turn of phrase is
+  writing. Twelve in a row is a writer showing their work, and it reads as polished in
+  exactly the way this audience distrusts. If a sentence exists to land well rather than
+  to tell somebody something, cut it.
+- **No coyness about the noun.** "Nowhere to put the thing you most want to track"
+  withholds the word gender to create interest, which is a copywriting reflex. Say
+  gender. Non-presumption is about not telling readers what their experience is, not
+  about declining to name the subject of the app.
+- **No neutrality the reader has no use for.** Being even-handed between a channel that
+  reports an install to Google and three that do not was a policy dressed as fairness.
+  Have the opinion, say it in one line, give the reason once, and get back to the
+  product. This replaces the earlier rule that presented the four channels as equals.
+- **No tutorials.** The site says what a thing is and what it costs you, not how to
+  operate it. How to point Obtainium at a repository is Obtainium's documentation.
+  Anything that reads as setup instructions is the acquisition section eating the page
+  the product should be on.
 
 ## Voice in Polish
 
@@ -454,6 +495,7 @@ this site to repeat them.
 
 *Newest first. One line per revision: what changed and why.*
 
+- v7 (2026-08-12) - The project speaks as one person, in the first person singular, and does not name that person or state that they are trans. Reversed the channel-equality rule: Google Play is listed last and the page says why, because even-handedness between one channel that reports an install to Google and three that do not was a policy the reader had no use for. Added five style rules the old list did not catch, all of them ways this copy sounded institutional rather than promotional: no talking about the copy on the copy, no epigram per paragraph, no coyness about the word gender, no neutrality the reader has no use for, no tutorials.
 - v6 (2026-08-12) - Start journal is „Otwórz dziennik” in Polish, decided by ticket 06 and reasoned in the term table. The version line above said v4 while this list was already on v5, so it now says what the list says.
 - v5 (2026-08-12) - Recorded the eight Polish terms ticket 05 had to coin, the two places the Polish site deliberately overrides `humanizer-pl`, and the note that Start journal still has no Polish name. „Archiwum” is the one term that deviates from shipped Polish, which the row says out loud.
 - v4 (2026-08-12) - Evidence beats the status line. Phase 2 ticket 03 reads done with every acceptance box unchecked and no service worker in the repository, which would have let "works offline" onto the page.

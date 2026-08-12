@@ -7,28 +7,28 @@
   "themeLight": "Light",
   "themeDark": "Dark",
   "sectionOverview": "What Gender Diary is",
-  "sectionPrivacy": "What it protects",
+  "sectionPrivacy": "What it protects, and what it doesn't",
   "sectionAcquisition": "How to get it",
   "acquisitionIntro": "Gender Diary runs in a browser. It opens straight away, with nothing to install and no account to make.",
   "startJournal": "Start journal",
-  "acquisitionAndroid": "There is no Android app yet. When there is one, these four are the ways we mean to offer it, and none of them is the one we recommend. Each becomes a link here once that channel works.",
+  "acquisitionAndroid": "There is no Android app yet. When there is one, these are the four places to get it. Google Play is last for a reason. Each becomes a link once it works.",
   "channelStatus": "Not available yet.",
   "channels": [
     {
       "name": "Aurora",
-      "note": "Aurora installs the same package as Google Play. It is a different way to get that package, not a different build."
+      "note": "The same build as Google Play, without your Google account attached to the download."
     },
     {
       "name": "F-Droid",
-      "note": "F-Droid would carry it in the main repository, and it builds what it distributes from source itself rather than taking a finished file from us."
-    },
-    {
-      "name": "Google Play",
-      "note": "Installing from Play means Google knows the app is on your phone."
+      "note": "Builds the app from source itself, so you are not trusting a file that came from me."
     },
     {
       "name": "Obtainium",
-      "note": "Obtainium follows this project's GitHub Releases and installs the signed release APK. It picks that file by name, which is what stops a debug or unsigned build being installed instead. The first release fixes the address of the page and the name of the file."
+      "note": "Follows this project's releases on GitHub and keeps itself up to date."
+    },
+    {
+      "name": "Google Play",
+      "note": "Works, and tells Google you have a trans app on your phone. Nothing in Gender Diary changes that."
     }
   ],
   "copyPending": "Copy pending."

@@ -33,18 +33,17 @@ is relying on it.
 
 > **What Gender Diary protects, and what it does not**
 >
-> This page is the long answer. It is longer than a privacy page usually is, because
-> the short version would have to leave out the parts that matter to somebody deciding
-> whether to trust this with their journal.
+> This is the long answer. The short one would have to leave out the parts that matter
+> if you are deciding whether to trust this with your journal.
 
 ### Where your journal is
 
 *Gate: shipped.*
 
-> Your journal is stored on your device. There is no Gender Diary account, no copy
-> on a server of ours, and nothing syncing anywhere in the background. An entry you
-> write goes into storage on the machine you wrote it on and stays there until you
-> export it or delete it.
+> Your journal is stored on your device. There is no Gender Diary account, no server
+> with a copy of it on, and nothing syncing in the background. An entry you write goes
+> into storage on the device you wrote it on and stays there until you export it or
+> delete it.
 >
 > There is no server, so there is no server to be breached, subpoenaed or sold. What
 > you are trusting instead is your own device and whoever else can reach it.
@@ -88,9 +87,9 @@ unpublishable and the fallback at the end replaces it.*
 > Photos are files rather than rows in a database, so encrypting the database never
 > reaches them. Each one is encrypted on its own, under the same key. An import runs
 > through memory and never lands in a temporary file, so there is no half-imported
-> copy of somebody's history sitting on the disk afterwards.
+> copy of your history left on the disk afterwards.
 >
-> **What is not covered, named rather than rounded up.** A few things stay outside,
+> **What is not covered.** A few things stay outside,
 > because the app has to be able to start and to let you unlock it: the wrapped key
 > and the settings used to derive it; your theme, palette and language; whether lock
 > on leave and disguise are switched on; and the timestamps that make repeated wrong
@@ -114,12 +113,11 @@ accident.*
 
 *Back to Journal tickets 09 and 10.*
 
-> **The passphrase cannot be recovered.** Not by you and not by us. There is no reset
-> that keeps your entries, no recovery email and no support request that can help,
-> because anything that could let us back in would mean the encryption was never doing
-> what this page says it does. Put it in a password manager before you write anything
-> you would be upset to lose. The app says the same thing at setup, but you are reading
-> this first, which is the point of saying it here.
+> **The passphrase cannot be recovered.** Not by you and not by me. There is no reset
+> that keeps your entries, no recovery email and no message to me that can help, because
+> a way back in for me would be a way back in for anyone else. Put it in a password
+> manager before you write anything you would be upset to lose. The app says this again
+> at setup.
 
 ### Archives
 
@@ -153,9 +151,8 @@ appears here unqualified.*
 > What the host does not receive is your journal. Entries, photos, notes and lab values
 > are not sent to it, because there is nowhere for them to be sent.
 >
-> This is why you will not read "Gender Diary makes no network requests" on this site.
-> Fetching the app is a network request. Your journal moving somewhere is not, and
-> those are different sentences that a reader deserves to have kept apart.
+> You will not read "Gender Diary makes no network requests" here, because it is not
+> true. Fetching the app is a network request. Your journal going somewhere is not.
 
 *Gate: Journal tickets 11 and 18. This is an Android sentence, so ticket 11 gates it
 before Play availability does, and it may not ride along inside the shipped block
@@ -163,7 +160,7 @@ above. Ticket 06 owns the channel list itself; this is the privacy consequence o
 channel, not an offer of one.*
 
 > Installing from Google Play means Google records that your account installed this
-> app. That is Google's, not ours, and no setting inside Gender Diary changes it.
+> app. That is between you and Google, and no setting inside Gender Diary changes it.
 
 ### What none of this protects against
 
@@ -173,8 +170,8 @@ compromised operating system and an already unlocked app.*
 > If somebody already controls your device, none of this is what stands between them
 > and your journal. An unlocked phone in somebody else's hands, an operating system
 > that has been compromised, or the app sitting open in front of them are all outside
-> what encryption at rest can do. Gender Diary does not claim otherwise, and you should
-> be suspicious of anything that does.
+> what encryption at rest can do. Gender Diary does not claim otherwise. Be wary of
+> anything that does.
 
 ### The policy itself
 
