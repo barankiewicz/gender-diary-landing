@@ -20,6 +20,19 @@ for them. Every sentence below stays in the present tense, the imperative, or an
 impersonal construction. No slash forms. This is the constraint the English never has to
 solve, and it is why several sentences here are built differently rather than closely.
 
+**The author is never assigned a gender either, and this is the harder half.** The site
+speaks in the first person singular, and Polish genders the first person in exactly the
+same places it genders the second: „napisałem" and „napisałam" are a choice, and so is
+every adjective about the speaker. The English "I" carries none of that. So the Polish
+first person stays in the present and the future, where it is neutral: „nie poproszę",
+„nie ja", „ode mnie", „mi". If a sentence needs the author in the past tense, the
+sentence is the problem, the same rule the second person already follows. No slash forms
+here either.
+
+This is not the same constraint as the reader's, and solving one does not solve the
+other. A sentence can keep the reader ungendered and still out the author in its second
+clause.
+
 **Terminology.** The app already ships in Polish, so the site follows it: wpis, nastrój,
 tagi, skale, zestaw, kamienie milowe, podsumowanie, wyniki badań, blokada aplikacji,
 kamuflaż, szybkie wyjście, tranzycja. Terms the shipped app has no Polish word for were
@@ -49,7 +62,7 @@ dropping it.
 
 **Subheadline**
 
-> Zapisz, jak minął dzień, i mierz to, co chcesz mierzyć. Konta nie zakładasz,
+> Zapisz, jak minął dzień, i jak ci w nim było z własną płcią. Konta nie zakładasz,
 > synchronizować nie ma czego.
 
 **Primary action**
@@ -66,9 +79,9 @@ is not called Start journal in Polish.
 > wpis nie oddaje całego dnia, napisz kilka. Jeśli dzień przepadł, dopisz go z datą
 > wsteczną.
 >
-> Aplikacje do notowania nastroju mają dobry kształt na codzienny nawyk i nie mają
-> gdzie zapisać tego, na czym najbardziej ci zależy. Gender Diary zostawia ten kształt
-> i dokłada skale. Zapisuje to, co jej powiesz, i niczego z tego nie interpretuje.
+> Aplikacje do notowania nastroju dobrze pasują do codziennego rytuału, tylko nie mają
+> gdzie zapisać płci. Gender Diary działa tak samo i dokłada do tego skale, które
+> nazywasz po swojemu. Zapisuje to, co jej powiesz, i niczego z tego nie interpretuje.
 
 ### Where it stands on privacy
 
@@ -77,8 +90,7 @@ is not called Start journal in Polish.
 > Twój dziennik jest zapisany na twoim urządzeniu. Nie ma konta Gender Diary, a wpisy
 > nie trafiają na serwer Gender Diary.
 >
-> Co to chroni, a czego nie chroni, nie mieści się w jednym zdaniu, więc ma osobną
-> stronę.
+> Co to chroni, a czego nie, jest na osobnej stronie.
 
 ---
 
@@ -100,13 +112,13 @@ that show written entries repeat it in short form, exactly as in English.
 **Ekran główny**
 
 > Powitanie, co przed tobą, i ostatnie siedem dni w kolorze, który wybierasz. Pasek
-> nastrojów zapisuje wpis na teraz jednym ruchem, więc w dzień, w którym pisanie nie
-> wchodzi w grę, nadal da się coś zapisać. Wpisy zmyślone.
+> nastrojów robi wpis jednym ruchem, więc w dzień, kiedy nie masz siły pisać, nadal da
+> się coś zapisać. Wpisy zmyślone.
 
 **Wpis**
 
 > Nastrój, twoje skale, tagi, notatka, zdjęcia. Wpisowi wystarczy jedno z tego, więc
-> dzień, w którym starczyło tylko na nastrój, i tak jest dniem zapisanym. Wpis zmyślony.
+> dzień, w którym starczyło tylko na nastrój, i tak się liczy. Wpis zmyślony.
 
 **Miesiąc**
 
@@ -150,7 +162,7 @@ that show written entries repeat it in short form, exactly as in English.
 > dziennie albo z datą wsteczną, do dnia, który przepadł.
 >
 > **Skale.** Pięć jest wbudowanych, wśród nich Poczucie płci, od dysforii na jednym
-> końcu do euforii na drugim. Własną skalę definiujesz od zera: dwie etykiety końców i
+> końcu do euforii na drugim. Własną skalę ustawiasz od zera: dwie etykiety końców i
 > zakres, jaki chcesz. Te, których używasz, łączysz w zestaw, żeby ekran wpisu pytał
 > tylko o to, co faktycznie mierzysz.
 >
@@ -184,8 +196,8 @@ that show written entries repeat it in short form, exactly as in English.
 > **Kamienie milowe i oś czasu.** Odliczanie do tego, co przed tobą, rocznice tego, co
 > za tobą.
 >
-> **Wyniki badań.** Trzymasz własne liczby i patrzysz, jak zmieniają się w czasie.
-> Aplikacja ich nie interpretuje.
+> **Wyniki badań.** Trzymasz własne liczby i patrzysz, jak zmieniają się w czasie. Bez
+> norm referencyjnych i bez niczego, co mówi ci, że wynik jest zły.
 
 ### Keeping it
 
@@ -219,8 +231,7 @@ treatment.*
 > wiesz tylko ty.
 >
 > **Blokada aplikacji.** PIN przed wejściem do aplikacji. Zatrzymuje kogoś, kto bierze do
-> ręki odblokowany telefon i chce poczytać. Nie jest szyfrowaniem tego, co zapisane, i ta
-> strona nie będzie tego sugerować.
+> ręki odblokowany telefon i chce poczytać. Nie jest szyfrowaniem tego, co zapisane.
 >
 > **Kamuflaż.** Karta przeglądarki pokazuje „Notes” zamiast Gender Diary.
 >
@@ -308,20 +319,25 @@ The imperative also keeps the reader ungendered, which rules out most of the alt
 before the meaning does. Lowercase „dziennik”, following the register the English file
 settled: the product is Gender Diary and the thing it holds is your journal.
 
-**Vocabulary in the channel notes.** „Wydanie” for a GitHub Release, „pakiet” for the
-Android package, „wersja deweloperska” for a debug build. None of these are product
-vocabulary, so none of them went into the table in `.agents/product-marketing.md`. The
-one entry that did is the button.
+**Vocabulary in the channel notes.** „Wydanie” for a GitHub Release, and that is now the
+only one. „Pakiet” for the Android package and „wersja deweloperska” for a debug build
+both left with the sentences that needed them, when the notes were cut to one line each.
+None of the three was product vocabulary, so none of them went into the table in
+`.agents/product-marketing.md`. The one entry that did is the button.
 
 **„Jeszcze niedostępne” is the status,** in the neuter, as a label rather than as
 agreement with a channel name. Aurora is feminine, Google Play and Obtainium behave as
 masculine, F-Droid likewise, and a status that has to agree with four different names is
 a status that eventually gets one of them wrong.
 
-**The Google Play note says what Play knows.** The marketing context asks for this
-sentence on the page rather than leaving a reader to work it out, and it is not a mark
-against Play so much as the one thing that differs between installing from a store and
-installing from a file.
+**The Google Play note is a mark against Play, and is meant to be.** „Aplikację dla osób
+trans” is blunter than the English original's „aplikacja”, and it is the accurate reading
+of what a Play install records: not that some app arrived, but which one. Polish carries
+this without a euphemism, so it does not get one.
+
+Play is listed last in both languages, and both say so. „Nie bez powodu” is the whole
+argument compressed, with the reason one line below on the Play entry itself, which is
+where a reader is looking when it matters.
 
 ### Staged: the F-Droid signing warning
 
@@ -344,37 +360,38 @@ needs the Journal repository to actually be public, which is a deliberate step i
 taken yet.*
 
 > **Można to przeczytać.** Gender Diary jest wolnym oprogramowaniem na licencji GPLv3.
-> Kod jest publiczny i tylko dlatego warto wierzyć w cokolwiek, co ta strona mówi o tym,
-> co aplikacja robi z twoim dziennikiem. Zajrzyj albo poproś o to kogoś, komu ufasz.
+> Nie musisz mi wierzyć na słowo: kod jest publiczny. Zajrzyj albo poproś o to kogoś,
+> komu ufasz.
 >
-> Licencja znaczy też, że wolno ten kod uruchamiać, zmieniać i przekazywać dalej. Jeśli
-> projekt kiedyś stanie, ten kod może podnieść ktoś inny, a twoje archiwa mają
-> udokumentowany format, a nie taki, który otwiera tylko ta jedna aplikacja.
+> Licencja znaczy też, że wolno ten kod uruchamiać, zmieniać i przekazywać dalej. To
+> projekt jednej osoby, więc może kiedyś stanąć. Wtedy ten kod może podnieść ktoś inny, a
+> twoje archiwa mają udokumentowany format, a nie taki, który otwiera tylko ta jedna
+> aplikacja.
 
 ### Support
 
 *Gate: shipped. The prohibition on asking for sensitive material is required by the spec
 and is not optional wording.*
 
-> **Jeśli coś nie działa**, napisz, jakie kroki prowadzą do problemu, czego się
-> spodziewasz i co dzieje się zamiast tego. Zwykle to w zupełności wystarczy.
+> **Jeśli coś nie działa**, napisz, co się dzieje i czego się spodziewasz. Zwykle to
+> wystarczy, żeby znaleźć przyczynę.
 >
-> **Nie przysyłaj nam swojego dziennika.** Ani archiwum, ani zrzutu ekranu z wpisami, ani
-> logu z sesji, w której coś piszesz. Nigdy o nic z tego nie poprosimy, a jeśli jakaś
-> prośba tak wygląda, nie pochodzi od nas.
+> **Nie przysyłaj mi swojego dziennika.** Ani archiwum, ani zrzutu ekranu z wpisami, ani
+> logu z sesji, w której coś piszesz. Nigdy o nic z tego nie poproszę. Jeśli ktoś prosi,
+> to nie ja.
 
-The English writes this as "say what you did, what you expected and what happened
-instead". Every one of those is a past-tense address to the reader, which in Polish picks
-a gender. The Polish asks for the same three things in the present tense instead.
+The English asks for what happened and what the reader expected instead. Both are
+past-tense addresses to the reader in English, which in Polish would pick a gender, so
+the Polish asks for the same two things in the present tense.
 
 ### Privacy policy and security contact
 
 *Gate: Journal ticket 21, which writes the policy and fixes the security contact. This
 site presents them and may not run ahead of them. No copy here yet.*
 
-The English file keeps its placeholder inside a blockquote, which is the one place a
-placeholder must never sit, since tickets 07 and 08 take the blockquotes as copy. It is
-outside one here. Worth fixing over there.
+The placeholder is outside a blockquote here, which is the only place it may sit, since
+tickets 07 and 08 take the blockquotes as copy. The English file used to keep its
+placeholder inside one; that is fixed.
 
 ---
 

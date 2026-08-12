@@ -19,7 +19,14 @@ has to land before the block may be published, per the claim table in the market
 context. Draft now, publish later. Nothing marked with a gate goes on the page until
 its ticket does.
 
-**Two register decisions this ticket owed the rest of the site.**
+**Three register decisions this file owes the rest of the site.**
+
+The project speaks as one person, in the first person singular. It is one person's
+project, and a plural "we" for a one-person project is the tell that makes a page read
+as a company with a support desk. Nothing on the site names or identifies that person,
+which is a separate decision: the copy shows who wrote it by knowing things, not by
+claiming to. Every "we", "us" and "our" is therefore an error to fix, including in the
+strings that already ship.
 
 `CONTEXT.md` calls it a gender dimension and notes that screens say "scale" to the
 person using the app. This site talks to that person, so it says scale, and it never
@@ -53,8 +60,8 @@ page.
 
 **Subheadline**
 
-> Write down how a day went, and track whatever it is you want to track. There is no
-> account to make and nothing to sync.
+> Write down how a day went, and track how your gender felt that day. No account,
+> nothing to sync.
 
 **Primary action**
 
@@ -69,8 +76,8 @@ to and why nothing else on the page competes with it.
 > note, your scales, tags and photos, and it only needs one of those to count. Write
 > several in one day if one does not cover it. Backdate one to a day you missed.
 >
-> Mood trackers have the right shape for a daily habit and nowhere to put the thing
-> you most want to track. Gender Diary keeps the shape and adds the scales. It records
+> Mood trackers are the right shape for a daily habit, and they have nowhere to put
+> gender. Gender Diary keeps the shape and adds scales you name yourself. It records
 > what you tell it and does not try to interpret any of it.
 
 ### Where it stands on privacy
@@ -80,8 +87,7 @@ to and why nothing else on the page competes with it.
 > Your journal is stored on your device. There is no Gender Diary account, and your
 > entries are not sent to a Gender Diary server.
 >
-> Being exact about what that does and does not protect takes more than a sentence,
-> so it has its own page.
+> What that protects, and what it does not, is on its own page.
 
 ---
 
@@ -105,8 +111,8 @@ the ones a reader might otherwise take for someone's real diary.
 **Home**
 
 > The greeting, what is coming up, and the last seven days in whatever colour you
-> picked. The mood row logs an entry for right now in one action, so logging something
-> stays possible on a day when writing is not. Invented entries.
+> picked. The mood row logs an entry for right now in one action, so on a day when you
+> cannot face writing, you can still log something. Invented entries.
 
 **An entry**
 
@@ -131,9 +137,9 @@ the ones a reader might otherwise take for someone's real diary.
 
 **Six months of one scale**
 
-> Every scale gets its own chart and its own average over the stretch of days you
-> pick. Days with more than one entry are averaged, and the list behind the chart says
-> which days those were.
+> Every scale gets its own chart and its own average over however many days you pick.
+> Days with more than one entry are averaged, and the list behind the chart says which
+> days those were.
 
 **Milestones**
 
@@ -157,9 +163,9 @@ the ones a reader might otherwise take for someone's real diary.
 > day, or backdated to a day you missed.
 >
 > **Scales.** Five come built in, among them Gender feeling, which runs from dysphoria
-> at one end to euphoria at the other. Make your own with
-> your own two end labels and your own range, and group the ones you use into a preset
-> so the entry screen only asks what you actually track.
+> at one end to euphoria at the other. Make your own, with whatever two end labels and
+> range you want, and group the ones you use into a preset so the entry screen only
+> asks about what you actually track.
 >
 > **Tags.** Grouped and editable. Turn a whole group off when it stops being relevant.
 > Hiding a built-in tag takes it out of every picker and leaves every entry that
@@ -177,8 +183,8 @@ the ones a reader might otherwise take for someone's real diary.
 > **Search.** Your notes and tag labels, matched as you type, ignoring diacritics.
 >
 > **Charts.** One per scale, over 7 to 365 days, with your streak. Open one for the
-> dated list of values behind it, so the line is something you can check rather than
-> take on trust.
+> dated list of values behind it, so you can check the line instead of taking it on
+> trust.
 >
 > **Tag insights.** For a given scale, how days with a tag compare to days without it.
 > An observation, not a verdict. Tags with fewer than three entries in that stretch
@@ -188,8 +194,8 @@ the ones a reader might otherwise take for someone's real diary.
 >
 > **Milestones and the timeline.** Countdowns ahead, anniversaries behind.
 >
-> **Lab results.** Keep your own numbers and watch them over time. The app does not
-> interpret them.
+> **Lab results.** Keep your own numbers and watch them over time. No reference ranges,
+> and nothing telling you a number is good or bad.
 
 ### Keeping it
 
@@ -223,8 +229,7 @@ treatment.*
 > you know whether that is yours.
 >
 > **App lock.** A PIN in front of the app. It stops someone picking up your unlocked
-> phone and reading it. It is not encryption of what is stored, and this site will not
-> imply that it is.
+> phone and reading it. It is not encryption of what is stored.
 >
 > **Disguise.** The browser tab says Notes instead of Gender Diary.
 >
@@ -301,9 +306,19 @@ with nothing appended: no campaign parameter, no referral identifier, and neithe
 the two choices this origin remembers. It is the only action on the page, and a test
 counts the links in `main` rather than trusting anyone to keep it that way.
 
-**The four channels are in alphabetical order,** because every other order is a
-recommendation, including the one that puts Play first on the grounds that most people
-are already on Play.
+**The order is an opinion, and the page owns it.** Google Play goes last, and the copy
+says it is last for a reason instead of leaving the position to hint. The other three
+are alphabetical among themselves, because nothing separates them: the opinion held here
+is that all three beat Play, not that any one of them beats the other two.
+
+The reason is the one already on the Play entry. Installing from Play tells Google there
+is a trans app on that phone, tied to that account, and no setting in the app touches
+it. That is the only difference between the channels a reader has any stake in, which is
+why it is the only one the section argues about.
+
+This reverses the earlier framing, which presented the four as equals and used
+alphabetical order to avoid ranking anything. Even-handedness between a channel that
+reports an install and three that do not was a policy the reader had no use for.
 
 **None of them is a link, because none of them has anything behind it.** Each renders
 as its name and a status, and a test fails if one of them renders as a link. What is
@@ -313,17 +328,25 @@ channels can follow.
 **No badge artwork yet.** Play's brand rules do not allow its badge without a live
 listing, and the other three have nothing to put on a badge. When they go live, Play
 and F-Droid use their own artwork under their own rules, and Aurora and Obtainium get
-this site's own controls, which is also what stops them reading as endorsements.
+this site's own controls.
 
-**Aurora installs the Play package.** Calling it a separate source would tell somebody
-they were getting a different build. There is no mirror link on this page and there
-will not be one: a reader who uses Aurora already has Aurora.
+**One line each, and none of them is a tutorial.** Every note says the one thing that
+changes a reader's decision and stops. How to point Obtainium at a repository is
+Obtainium's documentation, not this site's, and a paragraph about artifact-name matching
+turns the acquisition section into release engineering while the product waits below it.
+Cut from the earlier drafts on that basis: Obtainium's file-name rule and why a debug
+build would be a problem, F-Droid's main-repository inclusion process, and the promise
+that a URL and a file name arrive with the first release.
 
-**Obtainium needs the source and the rule, not the name alone.** It matches releases by
-artifact name, so a carelessly named debug build is one it would install without
-complaint. The releases page and the exact file name are fixed by the first release,
-which is why the copy states the rule instead of inventing a URL. The Journal
-repository is not public yet either, so a link today would be a 404.
+The rule stays true in this repository even though it left the page. Obtainium matches
+releases by artifact name, so a carelessly named debug build is one it would install
+without complaint. That is a release-naming obligation on the Journal's ticket 18, and
+it does not become a reader's problem by being written down here.
+
+**Aurora is the Play build without the Google account.** That is what earns it a line:
+same package, no install recorded against anybody. Calling it a separate source would
+tell somebody they were getting a different build. There is no mirror link on this page
+and there will not be one, since a reader who uses Aurora already has Aurora.
 
 ### Staged: the F-Droid signing warning
 
@@ -345,32 +368,32 @@ this block is never published. If it cannot, it goes next to F-Droid.*
 the Journal repository to actually be public, which is a deliberate step it has not
 taken yet.*
 
-> **You can read it.** Gender Diary is free software under the GPLv3. The source is
-> public, which is the only reason you should believe anything on this site about what
-> it does with your journal. Go and look, or get someone you trust to look.
+> **You can read it.** Gender Diary is free software under the GPLv3. Do not take my
+> word for anything on this page: the source is public. Go and look, or get someone you
+> trust to look.
 >
-> The licence also means you can run it, change it and pass it on. If this project
-> ever stops, someone else is free to pick the code up, and your Archives are a
-> documented format rather than something only this app can open.
+> The licence also means you can run it, change it and pass it on. This is one person's
+> project, so it might stop. If it does, someone else is free to pick the code up, and
+> your Archives are a documented format rather than something only this app can open.
 
 ### Support
 
 *Gate: shipped. The prohibition on asking for sensitive material is required by the
 spec and is not optional wording.*
 
-> **If something is broken**, say what you did, what you expected and what happened
-> instead. That is almost always enough.
+> **If something is broken**, tell me what happened and what you expected instead. That
+> is usually enough to find it.
 >
-> **Please do not send us your journal.** Not an Archive, not a screenshot with your
-> entries in it, not a log from a session where you were writing. We will not ask for
-> any of it, and if a request ever seems to be asking, it is not coming from us.
+> **Do not send me your journal.** Not an Archive, not a screenshot with your entries in
+> it, not a log from a session where you were writing. I will never ask for any of it.
+> If something asks, it is not me.
 
 ### Privacy policy and security contact
 
 *Gate: Journal ticket 21, which writes the policy and fixes the security contact. This
-site presents them and may not run ahead of them.*
-
-> Placeholder. The links exist once ticket 21 lands.
+site presents them and may not run ahead of them. No copy here yet: this paragraph is
+the handoff, not the text. Deliberately outside a blockquote, since tickets 07 and 08
+take the blockquotes as copy and a placeholder inside one would ship.*
 
 ---
 

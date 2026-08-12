@@ -37,21 +37,20 @@ takes a qualifier naturally and the three secrets end up named apart without eff
 
 > **Co Gender Diary chroni, a czego nie chroni**
 >
-> To jest ta dłuższa odpowiedź. Dłuższa, niż strona o prywatności zwykle bywa, bo krótka
-> wersja musiałaby pominąć akurat to, co jest ważne dla kogoś, kto się zastanawia, czy
-> powierzyć temu swój dziennik.
+> To jest ta dłuższa odpowiedź. Krótka musiałaby pominąć akurat to, co jest ważne, jeśli
+> zastanawiasz się, czy powierzyć temu swój dziennik.
 
 ### Where your journal is
 
 *Gate: shipped.*
 
 > Twój dziennik jest zapisany na twoim urządzeniu. Nie ma konta Gender Diary, nie ma
-> kopii na naszym serwerze, nie ma niczego, co synchronizuje się w tle. Wpis ląduje w
+> nigdzie serwera z kopią, nie ma niczego, co synchronizuje się w tle. Wpis ląduje w
 > pamięci urządzenia, na którym powstał, i zostaje tam, dopóki go nie wyeksportujesz albo
 > nie usuniesz.
 >
-> Naszego serwera nie ma, więc nie ma serwera, do którego można się włamać, który można
-> zająć nakazem albo sprzedać. Ufasz za to własnemu urządzeniu i każdemu, kto ma do niego
+> Serwera nie ma, więc nie ma serwera, do którego można się włamać, który można zająć
+> nakazem albo sprzedać. Ufasz za to własnemu urządzeniu i każdemu, kto ma do niego
 > dostęp.
 
 ### App lock
@@ -93,9 +92,9 @@ unpublishable in both languages and the fallback at the end replaces it.*
 > Zdjęcia są plikami, a nie wierszami w bazie, więc szyfrowanie bazy nigdy do nich nie
 > sięga. Każde jest szyfrowane osobno, tym samym kluczem. Import przechodzi przez pamięć
 > i nie ląduje w pliku tymczasowym, więc po wszystkim nie zostaje na dysku wpół
-> zaimportowana czyjaś historia.
+> zaimportowana twoja historia.
 >
-> **Czego nie obejmuje, po nazwie, bez zaokrąglania.** Kilka rzeczy zostaje na zewnątrz,
+> **Czego nie obejmuje.** Kilka rzeczy zostaje na zewnątrz,
 > bo aplikacja musi się uruchomić i pozwolić ci ją odblokować: zapakowany klucz i
 > ustawienia, z których się go wyprowadza, motyw, paleta i język, informacja o tym, czy
 > blokada przy wyjściu i kamuflaż są włączone, oraz znaczniki czasu, przez które każda
@@ -118,12 +117,11 @@ accident.*
 
 *Back to Journal tickets 09 and 10.*
 
-> **Hasła do dziennika nie da się odzyskać.** Ani tobie, ani nam. Nie ma resetu, który
-> zachowuje wpisy, nie ma maila odzyskiwania i żadne zgłoszenie do nas w tym nie pomoże,
-> bo cokolwiek wpuszczałoby nas z powrotem, znaczyłoby, że szyfrowanie nigdy nie robiło
-> tego, co ta strona o nim mówi. Wpisz je do menedżera haseł, zanim zapiszesz w
-> dzienniku cokolwiek, czego szkoda by ci było. Aplikacja mówi to samo przy konfiguracji,
-> ale to czytasz wcześniej i po to jest tutaj.
+> **Hasła do dziennika nie da się odzyskać.** Ani tobie, ani mnie. Nie ma resetu, który
+> zachowuje wpisy, nie ma maila odzyskiwania i żadne zgłoszenie do mnie w tym nie pomoże,
+> bo droga z powrotem dla mnie byłaby drogą z powrotem dla każdego innego. Wpisz je do
+> menedżera haseł, zanim zapiszesz w dzienniku cokolwiek, czego szkoda by ci było.
+> Aplikacja powie to samo przy konfiguracji.
 
 ### Archives
 
@@ -156,9 +154,9 @@ here unqualified, in either language.*
 > Serwer WWW nie dostaje twojego dziennika. Wpisy, zdjęcia, notatki i wyniki badań
 > nigdzie do niego nie idą, bo nie ma dokąd.
 >
-> Dlatego nie przeczytasz na tej stronie, że „Gender Diary nie wysyła żadnych zapytań
-> sieciowych”. Pobranie aplikacji jest zapytaniem sieciowym. Wyjście twojego dziennika na
-> zewnątrz jest czymś innym. To dwa różne zdania i czytelnik ma prawo dostać je osobno.
+> Dlatego nie przeczytasz tutaj, że „Gender Diary nie wysyła żadnych zapytań sieciowych”,
+> bo to nieprawda. Pobranie aplikacji jest zapytaniem sieciowym. Wyjście twojego dziennika
+> na zewnątrz to co innego.
 
 *Gate: Journal tickets 11 and 18. This is an Android sentence, so ticket 11 gates it
 before Play availability does, and it may not ride along inside the shipped block above.
@@ -166,8 +164,8 @@ Ticket 06 owns the channel list itself; this is the privacy consequence of a cha
 an offer of one.*
 
 > Instalacja z Google Play znaczy, że Google zapisuje u siebie, że twoje konto
-> zainstalowało tę aplikację. Dzieje się to po stronie Google, nie naszej, i żadne
-> ustawienie w Gender Diary tego nie zmienia.
+> zainstalowało tę aplikację. To sprawa między tobą a Google, a żadne ustawienie w Gender
+> Diary tego nie zmienia.
 
 ### What none of this protects against
 
@@ -177,8 +175,7 @@ compromised operating system and an already unlocked app.*
 > Jeśli ktoś już panuje nad twoim urządzeniem, to nie te mechanizmy stoją między nim a
 > twoim dziennikiem. Odblokowany telefon w cudzych rękach, przejęty system operacyjny
 > albo otwarta aplikacja na ekranie leżą poza tym, co szyfrowanie zapisanych danych umie
-> zrobić. Gender Diary nie twierdzi inaczej, a wobec czegokolwiek, co twierdzi inaczej,
-> warto zachować podejrzliwość.
+> zrobić. Gender Diary tego nie obiecuje. Jeśli coś to obiecuje, nie wierz.
 
 ### The policy itself
 
@@ -223,8 +220,12 @@ Where the Polish is built differently to say the same thing:
 - English addresses the reader in the past tense in several places ("a day you missed",
   "anything you wrote"). Polish would pick a gender doing that, so those become present
   tense: „co piszesz”, „zanim zapiszesz”.
-- „warto zachować podejrzliwość” rather than „warto być podejrzliwym”, because the
-  adjective would have been masculine.
+- „Jeśli coś to obiecuje, nie wierz” rather than „warto być podejrzliwym”, because the
+  adjective would have been masculine. The imperative is shorter than the impersonal
+  „warto zachować podejrzliwość” that stood here first, and it is ungendered too.
+- The first person singular has the same trap as the second, one clause further on.
+  „Ani tobie, ani mnie” and „żadne zgłoszenie do mnie” are neutral; any past-tense verb
+  about the author would not have been. The reasoning is in `content/pl/landing.md`.
 - „Jeśli coś nie działa” on the landing page replaces "say what you did", same reason.
 - The English "gate in the interface" survives as „bramka w interfejsie”. The alternative
   Polish idiom, „furtka”, suggests a way in rather than a way blocked, which is the
