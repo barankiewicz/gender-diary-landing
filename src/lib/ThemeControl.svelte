@@ -8,18 +8,10 @@
   const labels = { system: 'themeSystem', light: 'themeLight', dark: 'themeDark' } as const;
   const m = $derived(messages[locale]);
 
-  const stampedChoice =
-    typeof document === 'undefined'
-      ? 'system'
-      : document.documentElement.dataset.theme === 'light' ||
-          document.documentElement.dataset.theme === 'dark'
-        ? document.documentElement.dataset.theme
-        : 'system';
-
   /* Prerendered markup cannot know the stored choice, so the buttons render
      unpressed and correct themselves on load. The theme itself is already
      right by then - app.html stamped it before first paint. */
-  let choice = $state<ThemeChoice>(stampedChoice);
+  let choice = $state<ThemeChoice>('system');
   onMount(() => {
     choice = readThemeChoice();
   });
