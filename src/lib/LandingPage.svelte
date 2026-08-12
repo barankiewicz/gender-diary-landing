@@ -442,9 +442,15 @@
     margin: 0 0 1.25rem;
   }
 
+  /* min() around the track floor, because a bare minmax(17rem, 1fr) is a
+     promise the grid keeps even when it cannot: at 200% text 17rem is 544px,
+     wider than the phone holding it, and the row answers by pushing the whole
+     document sideways. The min() lets the column fall back to the width
+     actually available while leaving the 17rem intent untouched everywhere
+     it fits. */
   .cards {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(17rem, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(min(17rem, 100%), 1fr));
     gap: 1rem;
   }
 
@@ -507,9 +513,10 @@
     max-width: 60ch;
   }
 
+  /* Same floor problem as .cards above, one size up. */
   .channels {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(19rem, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(min(19rem, 100%), 1fr));
     gap: 1rem;
     list-style: none;
     margin: 1.5rem 0 0;

@@ -170,8 +170,12 @@ a {
   margin-left: auto;
 }
 
+/* Wraps for the same reason .controls does. Somebody running large text has
+   a header row far wider than the phone it sits on, and a control that can
+   only lay itself out on one line pushes the whole document sideways. */
 .control {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 0.5rem;
 }
