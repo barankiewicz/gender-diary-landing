@@ -1,0 +1,122 @@
+/* Ticket 11. The production content policy travels inside the page, because
+   lh.pl is managed hosting and a response header there is a request rather
+   than a promise. That makes the policy testable here, before any deploy, and
+   these tests are what stops it from being a policy the site cannot live
+   under.
+
+   The failure they exist for: a policy that forbids inline script is exactly
+   right until somebody adds an inline script, and then the build still
+   succeeds, the page still serves, and one thing on it quietly stops
+   happening. A blocked theme stamp is a wrong-theme flash. A blocked gateway
+   redirect is a page that stops sending anyone anywhere. Neither says a word
+   unless something is watching the console.
+
+   What is not testable here is whether the live origin sends the headers
+   static/.htaccess asks for. That needs the site to exist and a curl against
+   it - the ticket says so, and says why.
+
+   Run with `npm test`, which builds first. */
+import assert from 'node:assert/strict';
+import { readdir, readFile } from 'node:fs/promises';
+import { fileURLToPath } from 'node:url';
+import { createReporter, launchChromium, serveBuild } from './browser-harness.mjs';
+
+const buildDirectory = fileURLToPath(new URL('../build', import.meta.url));
+const { server, base } = await serveBuild(buildDirectory);
+const browser = await launchChromium();
+const { ok, fail, finish } = createReporter();
+
+const tests = [];
+const test = (name, run) => tests.push({ name, run });
+
+/** Every page the built site has, derived from the built files the way
+    scripts/crawl-policy.mjs derives them, so a page added later is covered
+    here without anyone remembering to add it. */
+const pages = (await readdir(buildDirectory, { recursive: true }))
+  .filter((entry) => entry.split('/').pop() === 'index.html')
+  .filter((entry) => !entry.split('/').includes('_app'))
+  .map((entry) => '/' + entry.slice(0, -'index.html'.length))
+  .sort();
+
+/** Opens a page and reports what the browser refused to load while it was
+    there. `securitypolicyviolation` fires per blocked resource and names the
+    directive that blocked it; console errors catch the rest, including a
+    script that loaded and then threw. */
+async function violationsOn(path) {
+  const context = await browser.newContext();
+  const page = await context.newPage();
+  const consoleErrors = [];
+  page.on('console', (message) => {
+    if (message.type() === 'error') consoleErrors.push(message.text());
+  });
+  await page.addInitScript(() => {
+    window.__violations = [];
+    document.addEventListener('securitypolicyviolation', (event) => {
+      window.__violations.push(`${event.violatedDirective} blocked ${event.blockedURI}`);
+    });
+  });
+
+  await page.goto(`${base}${path}`);
+  /* The gateway leaves for a language as soon as its script runs, and a
+     violation raised on the way out is still a violation. Reading after the
+     navigation settles is what makes this deterministic. */
+  await page.waitForLoadState('networkidle');
+  const violations = await page.evaluate(() => window.__violations);
+  await context.close();
+  return { violations, consoleErrors };
+}
+
+for (const path of pages) {
+  test(`${path} runs under its own policy without anything being blocked`, async () => {
+    const { violations, consoleErrors } = await violationsOn(path);
+    assert.deepEqual(violations, [], `the policy blocked something the page needs on ${path}`);
+    assert.deepEqual(consoleErrors, [], `${path} logged an error`);
+  });
+}
+
+test('every page carries the content policy and the referrer policy', async () => {
+  for (const path of pages) {
+    const html = await readFile(`${buildDirectory}${path}index.html`, 'utf8');
+    const csp = html.match(/<meta http-equiv="content-security-policy" content="([^"]*)"/i)?.[1];
+    assert.ok(csp, `${path} shipped without a content security policy`);
+
+    /* The shape of the policy rather than its exact text, which changes with
+       every inline script's hash. `default-src 'none'` is the assertion that
+       matters: it is what makes every other directive an allowance rather
+       than a suggestion, and it is what a third-party resource would have to
+       get past. */
+    assert.match(csp, /default-src 'none'/, `${path} left a default other than none`);
+    assert.doesNotMatch(
+      csp,
+      /script-src[^;]*'unsafe-inline'/,
+      `${path} allows any inline script, which is the policy not being one`,
+    );
+    assert.match(
+      html,
+      /<meta name="referrer" content="no-referrer"/,
+      `${path} shipped without a referrer policy`,
+    );
+  }
+});
+
+test('the header file the host is asked to read is in the build', async () => {
+  /* A dotfile in static/ is easy to lose: a build tool that skips them, or a
+     deploy that excludes them, drops the headers without failing anything. */
+  const htaccess = await readFile(`${buildDirectory}/.htaccess`, 'utf8');
+  assert.match(htaccess, /Referrer-Policy/, 'the .htaccess stopped asking for a referrer policy');
+  assert.match(htaccess, /frame-ancestors/, 'the .htaccess stopped refusing to be framed');
+});
+
+for (const { name, run } of tests) {
+  try {
+    await run();
+    ok(name);
+  } catch (error) {
+    fail(name, error);
+    if (process.env.VERBOSE) console.error(error);
+  }
+}
+
+await browser.close();
+server.close();
+process.exit(finish('All landing-site policy tests passed'));

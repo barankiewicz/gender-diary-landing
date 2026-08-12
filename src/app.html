@@ -3,6 +3,12 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <!-- The referrer policy, in the page rather than only in a response header,
+         because lh.pl may or may not send the header static/.htaccess asks for
+         and this one arrives either way (ticket 11). Start journal hands the
+         Journal no referrer, which is the same promise the link itself makes by
+         carrying no campaign parameter and no state. -->
+    <meta name="referrer" content="no-referrer" />
     <!-- The one font on the site, self-hosted (ticket 09: no remote asset).
          Preloaded because every visible string is set in it, so the swap it
          avoids would be the whole page. -->
