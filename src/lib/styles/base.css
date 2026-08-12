@@ -1,0 +1,97 @@
+/* Structural styling only. Ticket 09 owns the visual direction; what is here
+   exists so that light and dark are visibly different and the page is legible
+   while the copy is written.
+
+   The cascade decides the theme, not a script. `data-theme` on <html> is an
+   explicit choice and nothing else: when it is absent, the media query below
+   applies, which is what a first visit and a visitor without scripting get.
+   --theme names the theme in effect so that a test can read what the page is
+   actually painted in rather than what an attribute claims. */
+
+:root,
+:root[data-theme='light'] {
+  --theme: light;
+  --page: #ffffff;
+  --ink: #1a1a1a;
+  --muted: #565656;
+  --line: #d8d8d8;
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --theme: dark;
+    --page: #14161a;
+    --ink: #f2f2f2;
+    --muted: #adadad;
+    --line: #3a3d44;
+    color-scheme: dark;
+  }
+}
+
+:root[data-theme='dark'] {
+  --theme: dark;
+  --page: #14161a;
+  --ink: #f2f2f2;
+  --muted: #adadad;
+  --line: #3a3d44;
+  color-scheme: dark;
+}
+
+body {
+  margin: 0;
+  background: var(--page);
+  color: var(--ink);
+  font-family: system-ui, sans-serif;
+  line-height: 1.5;
+}
+
+.layout {
+  margin: 0 auto;
+  max-width: 42rem;
+  padding: 1.5rem 1rem 4rem;
+}
+
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.control {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+
+.control-label {
+  color: var(--muted);
+  font-size: 0.875rem;
+}
+
+.control a,
+.control button {
+  background: none;
+  border: 1px solid var(--line);
+  border-radius: 0.25rem;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.875rem;
+  padding: 0.25rem 0.6rem;
+  text-decoration: none;
+}
+
+.control [aria-current],
+.control [aria-pressed='true'] {
+  border-color: currentColor;
+  font-weight: 600;
+}
+
+/* The theme control needs scripting to do anything, so it is only shown once
+   the script in app.html has said scripting is running. */
+:root:not([data-js]) .theme-control {
+  display: none;
+}

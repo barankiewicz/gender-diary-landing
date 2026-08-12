@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="%lang%">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <script>
+      /* Stamps a stored theme choice before first paint. Someone who chose
+         dark chose it for a reason, and repainting from light after hydration
+         is a bright flash in their face.
+
+         Only an explicit choice is stamped. With no choice stored there is no
+         attribute, and the media query in base.css decides - so a visitor with
+         a dark system theme and no scripting gets a dark page too.
+
+         Inline and dependency-free because it has to run before any module is
+         parsed, so it cannot import the key or the values. Both are owned by
+         src/lib/theme.ts and have to change in the two places together.
+
+         data-js marks that scripting reached this document, so controls that
+         only work with it can stay hidden otherwise. */
+      try {
+        const root = document.documentElement;
+        root.dataset.js = 'on';
+        const stored = localStorage.getItem('gd-landing-theme');
+        if (stored === 'light' || stored === 'dark') root.dataset.theme = stored;
+      } catch {
+        /* storage unavailable, so the system theme decides */
+      }
+    </script>
+    %sveltekit.head%
+  </head>
+  <body>
+    <div style="display: contents">%sveltekit.body%</div>
+  </body>
+</html>
