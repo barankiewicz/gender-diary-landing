@@ -24,20 +24,21 @@ dropping every block whose gate has not passed. Unwrap the source lines into
 paragraphs; a blank line inside a blockquote is a paragraph break. No other editing:
 if a sentence needs rewording, it changes here first.
 
-Gates: `Gate: baseline` means true as soon as there is an Android release to list,
-which is Journal tickets 11 and 18, the floor under the listing itself. Every other
-block names its Journal ticket, and evidence beats the status line: the gate is the
-shipped behaviour, not the `done` marker. Locales move together; a block published in
-one is published in both.
+Gates: `Gate: baseline` means true as soon as there is an Android release to list
+with photos working, which is Journal tickets 11, 12 and 18, the floor under the
+listing itself: the entry copy claims photos, so the listing does not ship before
+Android photo storage does. Every other block names its Journal ticket, and evidence
+beats the status line: the gate is the shipped behaviour, not the `done` marker.
+Locales move together; a block published in one is published in both.
 
 ## Limits, and how the counts were made
 
 Play counts characters, newlines included, not bytes. Title 30, short description 80,
 full description 4,000. Recorded counts are the worst case with every gate passed
 (dropping blocks only shortens): title 26 and 23, short description 76 and 76, full
-description 3,935 and 3,940 for English and Polish. Counted with Python `len()` over
+description 3,839 and 3,837 for English and Polish. Counted with Python `len()` over
 the assembled text, exactly as the assembly rule above produces it. Recount after any
-edit; the margin on the full descriptions is around 60 characters, which survives
+edit; the margin on the full descriptions is around 160 characters, which survives
 small fixes and not a new paragraph.
 
 The full description ships as plain text. Play accepts a small HTML subset there;

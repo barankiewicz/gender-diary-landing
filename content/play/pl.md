@@ -9,7 +9,8 @@ only add drift.
 
 **Commentary is in English, copy is in Polish.** Everything inside a blockquote is the
 copy and it is Polish. Everything outside one is commentary. Gates match `en.md` block
-for block; a block published in one locale is published in both at once.
+for block, including its baseline definition (Journal tickets 11, 12 and 18); a block
+published in one locale is published in both at once.
 
 **The reader is never assigned a gender, and neither is the author.** Present tense,
 imperative or impersonal for the reader; present and future for the first person. No
@@ -49,13 +50,13 @@ work, the same call `content/pl/landing.md` records for the hero.
 
 *Gate: per block, below. Limit 4,000 characters, assembled the same way as the
 English: published blocks in order, blank line between blocks, headers as plain lines,
-no markup. Full assembly, every gate passed: 3,940 characters.*
+no markup. Full assembly, every gate passed: 3,837 characters.*
 
 *Gate: baseline.*
 
 > Gender Diary to dziennik tranzycji. Wpis to nastrój, notatka, twoje skale, tagi i
-> zdjęcia, a żeby się liczył, wystarczy jedno z tego. Napisz kilka jednego dnia albo
-> dopisz z datą wsteczną dzień, który przepadł.
+> zdjęcia, a żeby się liczył, wystarczy jedno z tego. Napisz kilka jednego dnia, a
+> dzień, który przepadł, dopisz z datą wsteczną.
 >
 > Aplikacje do notowania nastroju dobrze pasują do codziennego rytuału, tylko nie mają
 > gdzie zapisać płci. Gender Diary działa tak samo i dokłada skale, które nazywasz po
@@ -67,9 +68,6 @@ no markup. Full assembly, every gate passed: 3,940 characters.*
 >
 > Twój dziennik jest zapisany na twoim urządzeniu. Nie ma konta Gender Diary, nie ma
 > serwera z kopią i nic nie synchronizuje się w tle.
->
-> Bez reklam, bez telemetrii, bez analityki: ten projekt nie zarabia na tym, że
-> instalujesz aplikację.
 
 *Gate: Journal tickets 09, 10 and 13, exactly as in `en.md`, including the reasoning:
 the exclusion list is required wherever the claim is made, and there is no passphrase
@@ -91,7 +89,7 @@ sentence because on Android the key sits in the Keystore.*
 > drugim. Własne skale ustawiasz od zera i łączysz w zestaw, żeby ekran wpisu pytał
 > tylko o to, co mierzysz.
 
-*Gate: Journal ticket 12, the Android photo storage, same as `en.md`.*
+*Gate: baseline, which includes ticket 12's Android photo storage, same as `en.md`.*
 
 > Zdjęcia są trzymane w pamięci samej aplikacji. Nie trafiają do galerii telefonu,
 > więc nie wyskoczą komuś, kto przewija zdjęcia.
@@ -191,7 +189,8 @@ block is the same in both files. Where the Polish is built differently:
 
 The same absences as the English file, for the same reasons: the Play-tells-Google
 line stays on the site where the channel choice is made, encryption waits for its
-gate, HRT is not in the site's published copy so it is not here, there are no ratings,
-awards, endorsements or counts to cite, and the site sentences that did not survive
-the 4,000-character worst case (tag editing, tag insights, the recap, the 30-day
-Archive notice, the streak) are omitted in both locales at once.
+gate, HRT and the no-advertising sentence are not in the site's published copy so they
+are not here, there are no ratings, awards, endorsements or counts to cite, and the
+site sentences that did not survive the 4,000-character worst case (tag editing, tag
+insights, the recap, the 30-day Archive notice, the streak) are omitted in both
+locales at once.

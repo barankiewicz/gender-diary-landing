@@ -70,7 +70,9 @@ behind any featuring, often cropped, so nothing essential near the edges.
 
 Content: the app name and the one-line claim, on brand colours, one version per
 locale. English: "A transition journal that stays on your device." Polish: "Dziennik
-tranzycji, który zostaje na twoim urządzeniu." Nothing else: no device mockup with
+tranzycji, który zostaje na twoim urządzeniu." Both are the site's hero lines from
+`content/en/landing.md` and `content/pl/landing.md`; if a hero ever changes, this
+graphic changes with it. Nothing else: no device mockup with
 readable entries (the same reasoning as the spec's social-card rule: this image gets
 shared and cropped out of context), no badge artwork, no stars, no download figures,
 no emoji. Legible at thumbnail size, which in practice means the claim in one line

@@ -11,10 +11,17 @@ release ticket takes the blockquotes alone and loses nothing it needs. `README.m
 this directory says how to assemble them.
 
 **Gate markers.** Same convention as the rest of `content/`, with one shift. This
-listing cannot exist at all before Journal tickets 11 and 18, so `Gate: baseline` here
-means "true once there is an Android release to list", which covers everything the
-shipped web app already demonstrates. Blocks needing more than that name their Journal
-ticket. At upload, a block whose ticket has not shipped is left out, whole.
+listing cannot exist at all before Journal tickets 11 and 18, and the entry copy
+claims photos, which on Android are ticket 12. So `Gate: baseline` here means "true
+once there is an Android release to list, with photos working": Journal tickets 11,
+12 and 18 together. Blocks needing more than that name their Journal ticket. At
+upload, a block whose ticket has not shipped is left out, whole.
+
+**Several sentences are verbatim from `content/en/landing.md`**, on purpose: the
+sentence was already right, and a paraphrase would only drift. The cost is that an
+edit to the landing copy has a second home to reach. Anyone editing the landing
+sentences about entries, photos, the month gap or the mood-tracker shape should grep
+this directory before finishing.
 
 **Length limits.** Play counts characters, not bytes, so Polish diacritics cost one
 each. Title 30, short description 80, full description 4,000. Counts for this file are
@@ -54,7 +61,7 @@ are in `keywords.md`.
 *Gate: per block, below. Limit 4,000 characters. Play indexes all of it. Assembled by
 joining the published blocks in this order with a blank line between blocks; headers
 are plain lines, since this text ships without markup. Full assembly, every gate
-passed: 3,935 characters.*
+passed: 3,839 characters.*
 
 *Gate: baseline.*
 
@@ -75,9 +82,6 @@ product definition, not a greeting.
 >
 > Your journal is stored on your device. There is no Gender Diary account, no server
 > with a copy of it, and nothing syncing in the background.
->
-> No advertising, no telemetry, no analytics: this project earns nothing from you
-> installing it.
 
 "Makes no network requests" does not appear, per the claim table: fetching updates is
 a network request, and the sentence is banned unqualified.
@@ -105,9 +109,8 @@ surface.*
 > the other. Make your own, with whatever end labels and range you want, and group
 > them into a preset so the entry screen only asks about what you actually track.
 
-*Gate: Journal ticket 12, which builds Android photo storage. The gallery claim is
-about Android behaviour, so it waits for the Android implementation rather than riding
-along on the web evidence.*
+*Gate: baseline, whose definition above includes ticket 12's Android photo storage
+exactly because of sentences like this one and the entry copy.*
 
 > Photos are kept in the app's own storage. They never go into your phone's gallery,
 > so they do not turn up in a camera roll someone else is scrolling.
@@ -217,6 +220,13 @@ reasoning is recorded in `keywords.md`.
 **Ratings, awards, endorsements, counts.** None exist, so none appear. This also rules
 out "featured on", "loved by" and any number of installs, whatever the numbers later
 say.
+
+**No advertising, no telemetry.** True of the shipped app, in the marketing context's
+business-model section, and worth saying to exactly this audience. Cut anyway, because
+the site's published copy does not say it yet and the ticket's rule is that nothing
+appears in a store listing that the site does not say. The site should say it: the
+marketing context calls it worth saying once, and no landing or privacy block carries
+it. When a site ticket adds it, this listing takes it back in the same change.
 
 **Several site sentences that did not survive the length limit.** Tag editing, tag
 insights, the monthly recap, the 30-day Archive notice and the streak are on the site
