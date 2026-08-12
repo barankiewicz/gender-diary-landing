@@ -7,27 +7,21 @@
 
   let { locale }: { locale: Locale } = $props();
 
-  let hero: HTMLElement | null = null;
   let flagStroke: SVGSVGElement | null = null;
-  let flagInk: SVGGElement | null = null;
   let flagPath: SVGPathElement | null = null;
 
   const m = $derived(messages[locale]);
 
   onMount(() => {
-    if (!hero || !flagStroke || !flagInk || !flagPath) return;
+    if (!flagStroke || !flagPath) return;
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-
-    const heroNode = hero;
 
     flagStroke.dataset.motion = 'on';
     flagPath.style.strokeDasharray = '1';
     flagPath.style.strokeDashoffset = '1';
 
-    const pointerEvent = 'gd-hero-pointer';
     let disposed = false;
     let breatheControls: { stop: () => void } | null = null;
-    let pointerControls: { stop: () => void } | null = null;
 
     const drawThenBreathe = async () => {
       await animate(flagPath, { strokeDashoffset: [1, 0] }, { duration: 1.2, ease: [0.16, 1, 0.3, 1] })
@@ -45,57 +39,9 @@
 
     void drawThenBreathe();
 
-    const emitPointer = (x: number, y: number, active: boolean) => {
-      window.dispatchEvent(new CustomEvent(pointerEvent, { detail: { x, y, active } }));
-    };
-
-    const normalise = (event: PointerEvent) => {
-      const rect = heroNode.getBoundingClientRect();
-      const rawX = ((event.clientX - rect.left) / rect.width - 0.5) * 2;
-      const rawY = ((event.clientY - rect.top) / rect.height - 0.5) * 2;
-      return {
-        x: Math.max(-1, Math.min(1, rawX)),
-        y: Math.max(-1, Math.min(1, rawY)),
-      };
-    };
-
-    const settleFlag = (x: number, y: number) => {
-      pointerControls?.stop();
-      pointerControls = animate(
-        flagInk,
-        {
-          x: x * 9,
-          y: y * 4,
-          scaleX: 1 + Math.abs(x) * 0.025,
-          scaleY: 1 - Math.min(0.03, Math.abs(y) * 0.03),
-        },
-        { type: 'spring', stiffness: 260, damping: 30, mass: 0.45 },
-      );
-    };
-
-    const onPointerMove = (event: PointerEvent) => {
-      const { x, y } = normalise(event);
-      emitPointer(x, y, true);
-      settleFlag(x, y);
-    };
-
-    const onPointerLeave = () => {
-      emitPointer(0, 0, false);
-      settleFlag(0, 0);
-    };
-
-    heroNode.addEventListener('pointermove', onPointerMove, { passive: true });
-    heroNode.addEventListener('pointerleave', onPointerLeave);
-    heroNode.addEventListener('pointercancel', onPointerLeave);
-
     return () => {
       disposed = true;
       breatheControls?.stop();
-      pointerControls?.stop();
-      heroNode.removeEventListener('pointermove', onPointerMove);
-      heroNode.removeEventListener('pointerleave', onPointerLeave);
-      heroNode.removeEventListener('pointercancel', onPointerLeave);
-      emitPointer(0, 0, false);
     };
   });
 </script>
@@ -106,7 +52,7 @@
        point at this page until each channel has an artifact (Journal ticket
        18). The acquisition section below keeps the honest wording: nothing on
        Android exists yet. -->
-  <div class="hero" bind:this={hero}>
+  <div class="hero">
     <div class="hero-inner scrim">
       <h1 class="enter shimmer" style:--enter={0}>{m.pageTitle}</h1>
       <!-- Shrink-wrapped around the headline so the stroke below is exactly
@@ -157,7 +103,7 @@
               <stop class="stop-end" offset="100%" />
             </linearGradient>
           </defs>
-          <g class="flag-ink" bind:this={flagInk}>
+          <g class="flag-ink">
             <path
               class="flag-base"
               d="M2 7 L 398 7"

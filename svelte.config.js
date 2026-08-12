@@ -1,4 +1,5 @@
 import { createHash } from 'node:crypto';
+import { readFileSync } from 'node:fs';
 import adapter from '@sveltejs/adapter-static';
 import { vitePreprocess } from '@sveltejs/vite-plugin-svelte';
 import { GATEWAY_REDIRECT } from './src/lib/gateway-redirect.ts';
@@ -12,7 +13,11 @@ import { GATEWAY_REDIRECT } from './src/lib/gateway-redirect.ts';
    Hashed from the source the page ships rather than pasted in as a constant.
    A stale hash does not fail a build; it produces a gateway whose own script
    is blocked, which looks like a page that quietly stopped redirecting. */
-const inlineScriptHashes = [GATEWAY_REDIRECT].map(
+const appTemplate = readFileSync(new URL('./src/app.html', import.meta.url), 'utf8');
+const themeBootstrap = appTemplate.match(/<script>([\s\S]*?)<\/script>/)?.[1];
+if (!themeBootstrap) throw new Error('src/app.html has no theme bootstrap script');
+
+const inlineScriptHashes = [GATEWAY_REDIRECT, themeBootstrap].map(
   (body) => `sha256-${createHash('sha256').update(body).digest('base64')}`,
 );
 
