@@ -325,6 +325,30 @@ Entry, Blokada aplikacji is App lock, Kamuflaż i szybkie wyjście is disguise a
 exit, Kamienie milowe are Milestones. Where the app has no Polish word for something
 the site needs, ticket 05 decides it and the decision goes back into this file.
 
+**Terms ticket 05 decided.** Almost all of these are Phase 2 vocabulary, which is why
+the shipped catalogue has no Polish for them. This is the only copy of the table; the
+Polish content files point here rather than repeating it, because a second copy drifts.
+
+| English | Polish | Why not the obvious alternative |
+|---|---|---|
+| Archive, the file | archiwum | „Kopia zapasowa” is Backup, the habit, which the glossary keeps separate from the file. The app does ship „kopia zapasowa” on the stale-backup banner, so this is the one term where the site deviates from shipped Polish. It follows `content/en/landing.md`, which already writes "Archive" where the app's own banner says "backup" |
+| Journal passphrase | hasło do dziennika | „Hasło główne” is master password, on the glossary's avoid list |
+| Archive password | hasło do archiwum | Parallel to the above, so the two read as two secrets |
+| Encryption at rest | szyfrowanie zapisanych danych | „Szyfrowanie w spoczynku” is a calque nobody says |
+| Data key | klucz do danych | „Klucz główny” is master key, also on the avoid list |
+| Lock on leave | blokada przy wyjściu | Sits next to „szybkie wyjście”, which the app already ships |
+| Check-in, the daily prompt | codzienne pytanie | „Przypomnienie” is Reminder, which the glossary says this is not |
+| Web host | serwer WWW | „Nasz serwer” is the one that does not exist, so the one that serves the app needs a different name, or the privacy page denies having a server and then describes one |
+
+Two terms are decided against `humanizer-pl` rather than with it. "Kamienie milowe" is
+on its list of AI signatures, and it stays, because it is the app's own Polish label for
+Milestones and a reader looking for that screen has to find the same words. The disguise
+sentence quotes `Notes`, the literal untranslated string the Journal writes into the tab
+title, rather than the Polish the reader might expect.
+
+**Start journal has no Polish name yet.** The spec fixes the English wording of the
+primary action, and nothing fixes what it says in Polish. Ticket 06 owns it.
+
 **What does not carry across:** the English "words to avoid" list is a list of English
 words. Polish has its own marketing tells, its own calques from English, and its own
 way of sounding machine-translated, and `humanizer-pl` is the authority on them.
@@ -429,6 +453,7 @@ this site to repeat them.
 
 *Newest first. One line per revision: what changed and why.*
 
+- v5 (2026-08-12) - Recorded the eight Polish terms ticket 05 had to coin, the two places the Polish site deliberately overrides `humanizer-pl`, and the note that Start journal still has no Polish name. „Archiwum” is the one term that deviates from shipped Polish, which the row says out loud.
 - v4 (2026-08-12) - Evidence beats the status line. Phase 2 ticket 03 reads done with every acceptance box unchecked and no service worker in the repository, which would have let "works offline" onto the page.
 - v3 (2026-08-12) - Added the rule that privacy controls are presented as optional rather than expected. They all default to off, and copy that leads with concealment tells this audience the app is something to be ashamed of.
 - v2 (2026-08-12) - Corrected the claim table after review: added the Android row, since no Android project exists and the old table gated only the store links; moved web disguise and quick exit to available, which ticket 15 says are shipped. Replaced the glossary definitions with a traps-only table pointing at CONTEXT.md. Added the Polish voice section that ticket 05 needs.
