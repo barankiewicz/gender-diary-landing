@@ -1,7 +1,8 @@
 <script lang="ts">
-  import type { Snippet } from 'svelte';
+  import { onMount, type Snippet } from 'svelte';
   import Aura from '$lib/Aura.svelte';
   import ThemeControl from '$lib/ThemeControl.svelte';
+  import { startReveals } from '$lib/reveal';
   import {
     LANGUAGE_KEY,
     LOCALES,
@@ -30,6 +31,12 @@
      the click and not on the page. Opening somebody else's link to /en/ is not
      a decision to stop reading Polish, and it must not overwrite one. Without
      scripting the link still switches language; only the memory is lost. */
+  /* The scroll reveals for browsers that cannot scrub them in CSS. It decides
+     for itself whether there is anything to do, and returns the teardown.
+     onMount rather than $effect because it reads the laid-out page once and
+     has nothing to re-run for. */
+  onMount(startReveals);
+
   function remember(chosen: Locale) {
     try {
       localStorage.setItem(LANGUAGE_KEY, chosen);

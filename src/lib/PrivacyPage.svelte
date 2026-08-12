@@ -20,10 +20,14 @@
     <h1>{privacy.title}</h1>
     <p class="intro">{privacy.intro}</p>
 
+    <!-- Per paragraph rather than per section (ticket 17). A section here can
+         be 600px tall, and 600px of page sliding 24px as it goes by is motion
+         nobody can see; the paragraphs arriving one after another is the same
+         idea at a size that reads. -->
     {#each privacy.sections as section (section.heading)}
-      <section class="reveal">
-        <h2>{section.heading}</h2>
-        <Prose paragraphs={section.paragraphs} />
+      <section>
+        <h2 class="reveal">{section.heading}</h2>
+        <Prose paragraphs={section.paragraphs} reveal />
       </section>
     {/each}
   </article>

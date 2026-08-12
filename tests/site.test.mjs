@@ -6,7 +6,7 @@
    Run with `npm test`, which builds first. */
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
-import { readdir } from 'node:fs/promises';
+import { readdir, readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { createReporter, launchChromium, serveBuild } from './browser-harness.mjs';
 import { copyBlocks, sentences } from './copy-source.mjs';
@@ -1779,6 +1779,244 @@ for (const scheme of ['light', 'dark']) {
     });
   }
 }
+
+// The motion system (ticket 17)
+
+/* Motion is only observable as computed style, so these read style where the
+   rest of the file reads behaviour. What they are protecting is a claim the
+   ticket makes twice: a Chromium visitor gets the whole thing with scripting
+   switched off, and somebody who asked for reduced motion gets a finished
+   page with nothing moving on it rather than a page missing its parts. */
+
+/** The computed value of one property on the first match. */
+const styleOf = (page, selector, property) =>
+  page.evaluate(
+    ([selector, property]) => getComputedStyle(document.querySelector(selector))[property],
+    [selector, property],
+  );
+
+test('scroll-driven motion runs with scripting switched off', async () => {
+  /* No JavaScript at all: no hydration, no reveal.ts, nothing but the file the
+     host served and the stylesheet it links. Everything asserted below is
+     therefore CSS doing it. */
+  const { context, page } = await visitor({ javaScriptEnabled: false });
+  try {
+    await page.goto(`${base}/en/`);
+
+    const pan = await styleOf(page, '.tour-strip', 'animationName');
+    assert.equal(pan, 'pan', 'the tour did not pan without scripting');
+    assert.equal(
+      await styleOf(page, '.tour-stage', 'position'),
+      'sticky',
+      'the tour did not pin without scripting',
+    );
+
+    const reveals = await page
+      .locator('.reveal')
+      .evaluateAll((found) => found.map((node) => getComputedStyle(node).animationName));
+    assert.ok(reveals.length >= 8, `only ${reveals.length} items were set up to reveal`);
+    assert.ok(
+      reveals.every((name) => name === 'rise'),
+      'some items were not revealing without scripting',
+    );
+
+    assert.equal(
+      await styleOf(page, '.flag-stroke path', 'animationName'),
+      'draw',
+      'the hero stroke did not draw without scripting',
+    );
+  } finally {
+    await context.close();
+  }
+});
+
+test('the reveals are per item rather than per section', async () => {
+  /* The failure this exists for is the one ticket 17 was written about: the
+     class sitting on whole <section> elements, where a 600px block sliding
+     24px is invisible by construction and the page reads as still. */
+  const { context, page } = await visitor({});
+  try {
+    await page.goto(`${base}/en/`);
+
+    const sections = await page
+      .locator('main section')
+      .evaluateAll((found) => found.map((node) => getComputedStyle(node).animationName));
+    assert.ok(
+      sections.every((name) => name === 'none'),
+      'a whole section is still being revealed as one lump',
+    );
+
+    /* And they are staggered against each other, which for a scrubbed
+       animation means their ranges are offset rather than their delays. */
+    const ranges = await page
+      .locator('.entries .reveal')
+      .evaluateAll((found) => found.map((node) => getComputedStyle(node).animationRangeStart));
+    assert.ok(ranges.length >= 4, `only ${ranges.length} feature entries reveal`);
+    assert.ok(
+      new Set(ranges).size > 1,
+      `every item reveals at the same point, so nothing is staggered: ${ranges[0]}`,
+    );
+  } finally {
+    await context.close();
+  }
+});
+
+test('reduced motion removes the pinning and the drawing, and finishes them', async () => {
+  const { context, page } = await visitor({});
+  try {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await page.goto(`${base}/en/`);
+
+    assert.equal(
+      await styleOf(page, '.tour-stage', 'position'),
+      'static',
+      'the tour still pins with reduced motion',
+    );
+    assert.equal(
+      await styleOf(page, '.tour-strip', 'animationName'),
+      'none',
+      'the tour still pans with reduced motion',
+    );
+    assert.equal(
+      await styleOf(page, '.tour-stage', 'overflowX'),
+      'auto',
+      'with the pinning gone the strip has no way to be read',
+    );
+
+    /* The stroke is finished rather than absent. Its dash is what hides it
+       while it draws, and that only exists inside the motion block, so with
+       reduced motion there is no dash and the line is simply there. */
+    assert.equal(
+      await styleOf(page, '.flag-stroke path', 'animationName'),
+      'none',
+      'the hero stroke still draws itself with reduced motion',
+    );
+    assert.equal(
+      await styleOf(page, '.flag-stroke path', 'strokeDasharray'),
+      'none',
+      'the hero stroke is dashed with reduced motion, so it is drawn part way and left there',
+    );
+
+    const reveals = await page
+      .locator('.reveal')
+      .evaluateAll((found) =>
+        found.map((node) => ({
+          animation: getComputedStyle(node).animationName,
+          opacity: getComputedStyle(node).opacity,
+        })),
+      );
+    assert.ok(
+      reveals.every((item) => item.animation === 'none' && item.opacity === '1'),
+      'an item is still revealing, or was left invisible, with reduced motion',
+    );
+  } finally {
+    await context.close();
+  }
+});
+
+test('the hand-rolled fallback stands down where the CSS works', async () => {
+  /* reveal.ts exists for browsers without scroll-driven animations. Where
+     they are supported it must do nothing at all, or an element gets moved
+     twice: once by the scrubbed animation and once by a transition. */
+  const { context, page } = await visitor({});
+  try {
+    await page.goto(`${base}/en/`);
+    await page.waitForLoadState('networkidle');
+
+    assert.ok(
+      await page.evaluate(() => CSS.supports('animation-timeline', 'view()')),
+      'this browser cannot scrub, so the assertion below proves nothing',
+    );
+    assert.equal(
+      await page.locator('[data-reveal]').count(),
+      0,
+      'the fallback marked elements in a browser whose CSS already reveals them',
+    );
+  } finally {
+    await context.close();
+  }
+});
+
+test('the hand-rolled fallback reveals items in a browser that cannot scrub', async () => {
+  /* The other half of the test above, and the only way to reach it here:
+     Chromium can scrub, so reveal.ts stands down and its actual behaviour
+     would never run in this suite. Telling the page that one feature query
+     answers no is enough to take the branch a Safari or Firefox visitor
+     takes, without pretending to be either. */
+  const { context, page } = await visitor({});
+  try {
+    await context.addInitScript(() => {
+      const real = CSS.supports.bind(CSS);
+      CSS.supports = (...query) =>
+        query.some((part) => String(part).includes('animation-timeline')) ? false : real(...query);
+    });
+    await page.goto(`${base}/en/`);
+    await page.waitForLoadState('networkidle');
+
+    const waiting = page.locator('[data-reveal="pending"]');
+    assert.ok(
+      (await waiting.count()) > 0,
+      'the fallback marked nothing, so nothing below the fold would ever arrive',
+    );
+
+    /* Nothing already on screen is touched, because hiding what somebody is
+       reading so it can fade back in is a flash in their face. */
+    const aboveTheFold = await page.evaluate(() =>
+      [...document.querySelectorAll('[data-reveal="pending"]')].filter(
+        (node) => node.getBoundingClientRect().top < window.innerHeight,
+      ).length,
+    );
+    assert.equal(aboveTheFold, 0, 'the fallback hid something the reader could already see');
+
+    /* A handle rather than the locator. `[data-reveal="pending"]` stops
+       matching the moment the thing arrives, so a locator re-resolves to the
+       next element still waiting and the assertion below would be about a
+       different paragraph than the one that was scrolled to. */
+    const first = await waiting.first().elementHandle();
+    await first.scrollIntoViewIfNeeded();
+    await first.evaluate(
+      (node) =>
+        new Promise((resolve) => {
+          if (node.dataset.reveal === 'in') return resolve(true);
+          new MutationObserver((_, observer) => {
+            if (node.dataset.reveal !== 'in') return;
+            observer.disconnect();
+            resolve(true);
+          }).observe(node, { attributes: true, attributeFilter: ['data-reveal'] });
+        }),
+    );
+    assert.equal(
+      await first.getAttribute('data-reveal'),
+      'in',
+      'an item scrolled into view never arrived',
+    );
+  } finally {
+    await context.close();
+  }
+});
+
+test('the motion system brought no dependency with it', async () => {
+  /* Ticket 17, and Alicja's answer about Rive: the pinning, the scrubbing and
+     the drawn stroke are CSS, and the fallback is a file in this repository.
+     A landing page arguing that the app holds nothing back does not ship an
+     animation library to slide paragraphs upward. */
+  const manifest = JSON.parse(
+    await readFile(fileURLToPath(new URL('../package.json', import.meta.url)), 'utf8'),
+  );
+  assert.deepEqual(
+    manifest.dependencies ?? {},
+    {},
+    'the site gained a runtime dependency',
+  );
+
+  const banned = ['gsap', 'motion', 'framer', 'rive', 'lottie', 'anime', 'lenis', 'aos'];
+  for (const name of Object.keys(manifest.devDependencies ?? {})) {
+    assert.ok(
+      !banned.some((library) => name.includes(library)),
+      `${name} is an animation library, and this page does its motion in CSS`,
+    );
+  }
+});
 
 for (const { name, run } of tests) {
   try {

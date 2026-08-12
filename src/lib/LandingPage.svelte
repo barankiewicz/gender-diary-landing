@@ -17,7 +17,49 @@
   <div class="hero">
     <div class="hero-inner scrim">
       <h1 class="enter shimmer" style:--enter={0}>{m.pageTitle}</h1>
-      <p class="headline enter" style:--enter={1}>{m.hero.headline}</p>
+      <!-- Shrink-wrapped around the headline so the stroke below is exactly
+           as wide as the words it sits under, whatever the balancer does with
+           the line breaks. -->
+      <div class="headline-block enter" style:--enter={1}>
+        <p class="headline">{m.hero.headline}</p>
+
+      <!-- The flag as a line rather than as stripes: one hand-drawn curve
+           stroked blue to white to pink, drawing itself once the headline has
+           landed. Alicja asked for this in Rive (2026-08-12); it is SVG
+           because Rive would be 150-200kb of runtime and WASM against a
+           ticket that argues 40kb is already too much, would need
+           wasm-unsafe-eval in a policy that has no eval anywhere in it, and
+           would leave a visitor without scripting looking at an empty canvas.
+           This is markup, so they get the line too.
+
+           pathLength normalises the curve to 1 unit, which is what lets the
+           dash in base.css be written as a fraction rather than as a length
+           somebody has to measure again after every edit to the `d`. -->
+      <svg
+        class="flag-stroke"
+        viewBox="0 0 400 14"
+        preserveAspectRatio="none"
+        aria-hidden="true"
+        focusable="false"
+      >
+        <defs>
+          <linearGradient id="flag-stroke-gradient" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0%" stop-color="var(--grad-a)" />
+            <stop offset="50%" stop-color="var(--stroke-mid)" />
+            <stop offset="100%" stop-color="var(--grad-b)" />
+          </linearGradient>
+        </defs>
+        <path
+          pathLength="1"
+          d="M4 10 C 78 3, 148 12, 226 6 S 344 3, 396 9"
+          fill="none"
+          stroke="url(#flag-stroke-gradient)"
+          stroke-width="3"
+          stroke-linecap="round"
+        />
+      </svg>
+      </div>
+
       <p class="subheadline enter" style:--enter={2}>{m.hero.subheadline}</p>
 
       <div class="hero-actions enter" style:--enter={3}>
@@ -49,7 +91,7 @@
       <div class="standfirst"><Prose paragraphs={m.overview.slice(0, 1)} /></div>
     </div>
     <div class="body lede">
-      <Prose paragraphs={m.overview.slice(1)} />
+      <Prose paragraphs={m.overview.slice(1)} reveal />
     </div>
   </section>
 
@@ -59,7 +101,7 @@
       <div class="standfirst"><Prose paragraphs={m.privacyHandoff.slice(0, 1)} /></div>
     </div>
     <div class="body">
-      <div class="panel">
+      <div class="panel reveal">
         <Prose paragraphs={m.privacyHandoff.slice(1)} />
         <!-- The link is the privacy page's own title, so the reader knows what
              they are opening before they open it. -->
@@ -78,16 +120,18 @@
          ratio its screenshot will have, so ticket 16 drops the pictures in
          and moves no layout; until then the frame holds only this section's
          colours, and the page describes no picture that is not there. -->
-    <div class="tour-bleed">
-      <ol class="tour-strip">
-        {#each m.tour as screen, index (screen.screen)}
-          <li>
-            <div class="slot" aria-hidden="true" data-tint={index % 2 ? 'pink' : 'blue'}></div>
-            <h3>{screen.screen}</h3>
-            <p>{screen.caption}</p>
-          </li>
-        {/each}
-      </ol>
+    <div class="tour-pin">
+      <div class="tour-stage">
+        <ol class="tour-strip">
+          {#each m.tour as screen, index (screen.screen)}
+            <li>
+              <div class="slot" aria-hidden="true" data-tint={index % 2 ? 'pink' : 'blue'}></div>
+              <h3>{screen.screen}</h3>
+              <p>{screen.caption}</p>
+            </li>
+          {/each}
+        </ol>
+      </div>
     </div>
   </section>
 
@@ -110,9 +154,9 @@
                  its own separator. -->
             {#each group.paragraphs as paragraph, index (index)}
               {#if typeof paragraph === 'string'}
-                <p class="plain">{paragraph}</p>
+                <p class="plain reveal" style:--reveal={index}>{paragraph}</p>
               {:else}
-                <p><strong>{paragraph.lead}</strong>{paragraph.rest}</p>
+                <p class="reveal" style:--reveal={index}><strong>{paragraph.lead}</strong>{paragraph.rest}</p>
               {/if}
             {/each}
           </div>
@@ -141,8 +185,8 @@
            becomes a link only when it has an artifact behind it (Journal
            ticket 18). -->
       <ul class="channels">
-        {#each m.channels as channel (channel.name)}
-          <li>
+        {#each m.channels as channel, index (channel.name)}
+          <li class="reveal" style:--reveal={index}>
             <strong>{channel.name}</strong>
             <span class="status">{m.channelStatus}</span>
             <p>{channel.note}</p>
@@ -157,7 +201,7 @@
       <h2>{m.sectionSupport}</h2>
     </div>
     <div class="body support">
-      <Prose paragraphs={m.support} />
+      <Prose paragraphs={m.support} reveal />
     </div>
   </section>
 </PageShell>
@@ -283,12 +327,51 @@
     margin: 1rem 0 0;
   }
 
-  .tour-bleed {
-    /* Its own scroll container, so a strip wider than the window scrolls
-       inside itself rather than taking the document with it. */
+  /* The strip a reader gets when nothing pins it: their own scroll container,
+     wider than the window and scrolling inside itself so it never takes the
+     document sideways. This is the finished section for a browser without
+     scroll-driven animations and for anybody who asked for reduced motion,
+     and the pinned pan below is written on top of it rather than instead of
+     it. */
+  .tour-stage {
     overflow-x: auto;
     scroll-snap-type: x proximity;
     scrollbar-width: thin;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    @supports (animation-timeline: view()) {
+      /* The scroll distance the pan is spent over. The stage sticks for the
+         height of this box less its own, so 320vh of page buys roughly 220vh
+         of pinned pan. */
+      .tour-pin {
+        height: 320vh;
+        view-timeline: --tour block;
+      }
+
+      .tour-stage {
+        position: sticky;
+        top: 56px;
+        height: calc(100dvh - 56px);
+        display: flex;
+        align-items: center;
+        /* Clip rather than scroll now that the strip is driven rather than
+           dragged, and the clip is also what keeps a strip several windows
+           wide from widening the document. */
+        overflow: clip;
+        scroll-snap-type: none;
+      }
+
+      /* `contain` is the phase where the pin box covers the whole viewport,
+         which is exactly the stretch over which the stage is stuck. The
+         keyframe is in base.css with the rest of them, and it carries the
+         reason this pan exists. */
+      .tour-strip {
+        animation: pan linear both;
+        animation-timeline: --tour;
+        animation-range: contain 0% contain 100%;
+      }
+    }
   }
 
   .tour-strip {
@@ -531,13 +614,30 @@
      and at 200% text 2.4rem is 76.8px, which sets "transition" wider than the
      phone holding it. The min() lets the floor fall back to what the viewport
      can carry and leaves the 2.4rem intent untouched everywhere it fits. */
+  /* Shrink-wrapped so that .flag-stroke below can be exactly as wide as the
+     longest line of the headline, whatever text-wrap: balance decides that
+     is, in either language. */
+  .headline-block {
+    width: fit-content;
+    max-width: 100%;
+    margin: 0 0 1.5rem;
+  }
+
+  .flag-stroke {
+    display: block;
+    width: 100%;
+    height: 0.85rem;
+    margin-top: 0.35rem;
+    overflow: visible;
+  }
+
   .headline {
     font-size: clamp(min(2.4rem, 12vw), 7vw, 4.75rem);
     font-weight: 600;
     line-height: 1.05;
     letter-spacing: -0.03em;
     text-wrap: balance;
-    margin: 0 0 1.25rem;
+    margin: 0;
     max-width: 17ch;
     background: linear-gradient(105deg, var(--ink) 45%, var(--grad-a) 78%, var(--grad-b) 96%);
     -webkit-background-clip: text;
