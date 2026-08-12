@@ -29,9 +29,11 @@ const { ok, fail, finish } = createReporter();
 const tests = [];
 const test = (name, run) => tests.push({ name, run });
 
-/** Every page the built site has, derived from the built files the way
-    scripts/crawl-policy.mjs derives them, so a page added later is covered
-    here without anyone remembering to add it. */
+/** Every page the built site has, read off the built files rather than listed,
+    so a page added later is covered here without anyone remembering to add it.
+    Derived a second time rather than imported from scripts/crawl-policy.mjs,
+    for the reason the same derivation is repeated in tests/site.test.mjs: a
+    test that shares its subject's code stops being able to disagree with it. */
 const pages = (await readdir(buildDirectory, { recursive: true }))
   .filter((entry) => entry.split('/').pop() === 'index.html')
   .filter((entry) => !entry.split('/').includes('_app'))
@@ -96,6 +98,31 @@ test('every page carries the content policy and the referrer policy', async () =
       /<meta name="referrer" content="no-referrer"/,
       `${path} shipped without a referrer policy`,
     );
+  }
+});
+
+test('only the two known things are parsed before the policy arrives', async () => {
+  /* A policy in a meta element governs what follows it and nothing before it,
+     and the policy arrives with %sveltekit.head%. Two things in src/app.html
+     are deliberately above it: the theme stamp, which cannot move below the
+     stylesheet without waiting on it, and the font preload beside it. Both are
+     written in a source file rather than acquired at run time.
+
+     What this test refuses is a third. The region above the policy is the one
+     place on the site where a resource can be added and no policy will have an
+     opinion, and it is invisible: a page with something new up there looks
+     exactly like a page without it. */
+  for (const path of pages) {
+    const html = await readFile(`${buildDirectory}${path}index.html`, 'utf8');
+    const unpoliced = html.slice(0, html.indexOf('http-equiv="content-security-policy"'));
+
+    const scripts = unpoliced.match(/<script/g) ?? [];
+    assert.equal(scripts.length, 1, `${path} has an ungoverned script beyond the theme stamp`);
+    assert.match(unpoliced, /gd-landing-theme/, `${path}: the ungoverned script is not that one`);
+
+    const links = unpoliced.match(/<link/g) ?? [];
+    assert.equal(links.length, 1, `${path} loads something ungoverned beyond the font`);
+    assert.match(unpoliced, /space-grotesk/, `${path}: the ungoverned load is not the font`);
   }
 });
 

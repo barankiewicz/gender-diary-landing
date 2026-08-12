@@ -3,6 +3,11 @@ node_modules/
 build/
 vite.config.ts.timestamp-*
 
+# What scripts/lhpl-setup.sh remembers between runs: the hosting account's
+# host, username and deploy directory. Never the password, which lives in the
+# wallet and in a GitHub secret and nowhere else.
+.env
+
 # AI/agent-local files - session state, trackers and agent config stay out of the repo
 .scratch/
 .claude/

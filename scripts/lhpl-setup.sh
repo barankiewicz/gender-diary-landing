@@ -226,6 +226,7 @@ while [[ -z "$FTP_SERVER_DIR" || "$FTP_SERVER_DIR" != */ || "$FTP_SERVER_DIR" ==
   warn "It has to name a single site's directory and end in a slash."
   ask FTP_SERVER_DIR "Deploy target:"
 done
+write_env FTP_SERVER_DIR "$FTP_SERVER_DIR"
 
 # ── 3 ─────────────────────────────────────────────────────────────────────
 stage "Check the DNS actually resolves"
@@ -252,9 +253,12 @@ stage "Credentials for the deploy"
 say "These go to GitHub Actions and nowhere else. They open this hosting"
 say "account only. The Journal lives on a different host with its own"
 say "credentials, and nothing here can reach it."
-note "The account's host and username are in the lhpl-managed-hosting skill."
+note "The account's host and username are in the lhpl-managed-hosting skill, and"
+note "the wallet is keyed on both, so a typo here turns into a password prompt."
 ask FTP_SERVER "FTP host (e.g. serwerNNNNNN.lh.pl):"
 ask FTP_USERNAME "FTP username:"
+write_env FTP_SERVER "$FTP_SERVER"
+write_env FTP_USERNAME "$FTP_USERNAME"
 
 FTP_PASSWORD=""
 if command -v secret-tool >/dev/null 2>&1; then
@@ -263,7 +267,8 @@ fi
 if [[ -n "$FTP_PASSWORD" ]]; then
   say "Password found in the wallet."
 else
-  warn "Not in the wallet under those attributes."
+  warn "Nothing in the wallet under $FTP_USERNAME at $FTP_SERVER."
+  warn "Check those two before typing a password: the wallet already has one."
   ask_secret FTP_PASSWORD "Account password:"
   if command -v secret-tool >/dev/null 2>&1 && confirm "Store it in the wallet for next time?"; then
     printf '%s' "$FTP_PASSWORD" |

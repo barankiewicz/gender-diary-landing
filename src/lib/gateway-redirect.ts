@@ -5,12 +5,13 @@
     prerendered file, before anything paints, so nobody watches `/` briefly
     appear on their way through it.
 
-    Dependency-free, which means the storage key and the locale list are
-    written out a second time below. src/lib/site.ts owns both; they have to
-    change together.
+    A literal, with nothing interpolated into it, which is what makes it safe
+    to hand to `{@html}` and what makes its hash worth computing. The cost is
+    that the storage key and the locale list are written out a second time
+    below; src/lib/site.ts owns both, and they have to change together.
 
-    A string in a module of its own rather than a literal in the page, because
-    the production policy allows this script by its hash (ticket 11, and
+    A module of its own rather than a string inside the page, because the
+    production policy allows this script by its hash (ticket 11, and
     svelte.config.js computes it). Page and policy read the same characters, so
     editing the script cannot leave the gateway blocked by its own policy -
     which would look like a page that simply stops redirecting. */

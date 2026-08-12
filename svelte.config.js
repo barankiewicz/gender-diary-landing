@@ -1,27 +1,18 @@
 import { createHash } from 'node:crypto';
-import { readFileSync } from 'node:fs';
 import adapter from '@sveltejs/adapter-static';
 import { vitePreprocess } from '@sveltejs/vite-plugin-svelte';
 import { GATEWAY_REDIRECT } from './src/lib/gateway-redirect.ts';
 
-/* The two inline scripts this repository writes: the theme stamp in
-   src/app.html and the gateway's language redirect. Both have to run before
-   anything paints, so neither can become a file of its own, and a hash is
-   what lets the policy stay closed to everything else. SvelteKit hashes the
-   scripts it injects itself, which differ per page.
+/* The gateway's language redirect: an inline script this repository writes,
+   which the policy has to allow by name or the site stops sending anyone
+   anywhere. SvelteKit hashes the scripts it injects itself, and those differ
+   per page. The theme stamp is not here because it is not governed - it sits
+   above the policy in src/app.html, for the reason given there.
 
-   Hashed from the source each page ships rather than pasted in as constants.
-   A stale hash does not fail a build; it produces a page whose own script is
-   blocked, which reads as a wrong-theme flash or a gateway that stopped
-   redirecting. An inline script written anywhere else has to be listed here
-   too, and tests/policy.test.mjs is what says so. */
-const appScripts = [
-  ...readFileSync(new URL('./src/app.html', import.meta.url), 'utf8').matchAll(
-    /<script>([\s\S]*?)<\/script>/g,
-  ),
-].map(([, body]) => body);
-
-const inlineScriptHashes = [...appScripts, GATEWAY_REDIRECT].map(
+   Hashed from the source the page ships rather than pasted in as a constant.
+   A stale hash does not fail a build; it produces a gateway whose own script
+   is blocked, which looks like a page that quietly stopped redirecting. */
+const inlineScriptHashes = [GATEWAY_REDIRECT].map(
   (body) => `sha256-${createHash('sha256').update(body).digest('base64')}`,
 );
 

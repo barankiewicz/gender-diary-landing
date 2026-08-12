@@ -57,9 +57,10 @@ async function servedByTheBuild(pathname) {
   );
 }
 
-/** One request, and one retry, because a single timeout is a slow network far
-    more often than it is a dead link, and a check nobody trusts gets muted. */
-async function answers(url) {
+/** Why a link failed, or null if it did not. One request and one retry,
+    because a single timeout is a slow network far more often than it is a dead
+    link, and a check nobody trusts gets muted. */
+async function failureFetching(url) {
   for (const attempt of [1, 2]) {
     try {
       const response = await fetch(url, {
@@ -79,22 +80,19 @@ async function answers(url) {
   }
 }
 
+let external = 0;
 for (const target of [...links.keys()].sort()) {
   const url = new URL(target, `${SITE_ORIGIN}/`);
-  const local = url.origin === SITE_ORIGIN;
 
-  if (local) {
+  if (url.origin === SITE_ORIGIN) {
     if (!(await servedByTheBuild(url.pathname))) report(target, 'no such file in the build');
     continue;
   }
 
-  const failure = await answers(url.href);
+  external++;
+  const failure = await failureFetching(url.href);
   if (failure) report(target, failure);
 }
-
-const external = [...links.keys()].filter(
-  (target) => new URL(target, `${SITE_ORIGIN}/`).origin !== SITE_ORIGIN,
-).length;
 
 console.log(
   `links: ${links.size} across ${files.length} pages, ${external} of them off this origin`,

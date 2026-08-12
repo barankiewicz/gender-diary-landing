@@ -87,7 +87,8 @@ jobs:
 
   deploy:
     name: publish to lh.pl
-    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    # A pull request's ref is refs/pull/N/merge, so this excludes them too.
+    if: github.ref == 'refs/heads/main'
     needs: check
     runs-on: ubuntu-latest
     steps:
