@@ -79,11 +79,9 @@
       <h2>{m.sectionAcquisition}</h2>
       <p>{m.acquisitionIntro}</p>
 
-      <!-- The one action on the page, and a plain link in this tab. Nothing is
-           appended to it and nothing is attached to it: no campaign parameter,
-           no referral identifier, and neither of the two choices this origin
-           remembers. The Journal is a different origin and learns nothing from
-           a person arriving here. -->
+      <!-- The one action on the page: a plain link, in this tab, to the URL
+           and nothing appended to it. What may not ride along with it is on
+           JOURNAL_URL in $lib/site. -->
       <p><a class="action" href={JOURNAL_URL}>{m.startJournal}</a></p>
 
       <p>{m.acquisitionAndroid}</p>

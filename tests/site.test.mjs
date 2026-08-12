@@ -15,8 +15,8 @@ const SITE_ORIGIN = 'https://genderdiary.barankiewicz.dev';
 
 /* The production Journal, on the origin it has to itself. Provisional in the
    same way, and decided by the Journal repository's ticket 01. The exact
-   string is the assertion: a campaign parameter, a referral identifier or a
-   remembered preference appended to it is what these tests exist to catch. */
+   string is the assertion, for the reason given on JOURNAL_URL in
+   src/lib/site.ts, and changing it there means changing it here. */
 const JOURNAL_URL = 'https://app.genderdiary.barankiewicz.dev/';
 
 /** The four Android channels, in the order the page lists them, which is
@@ -25,8 +25,18 @@ const CHANNELS = ['Aurora', 'F-Droid', 'Google Play', 'Obtainium'];
 
 /** What a reader sees of the acquisition section, per language. */
 const ACQUISITION = {
-  en: { heading: 'How to get it', action: 'Start journal', status: 'Not available yet.' },
-  pl: { heading: 'Skąd je wziąć', action: 'Otwórz dziennik', status: 'Jeszcze niedostępne.' },
+  en: {
+    heading: 'How to get it',
+    action: 'Start journal',
+    status: 'Not available yet.',
+    noAndroid: 'There is no Android app yet.',
+  },
+  pl: {
+    heading: 'Skąd je wziąć',
+    action: 'Otwórz dziennik',
+    status: 'Jeszcze niedostępne.',
+    noAndroid: 'Aplikacji na Androida jeszcze nie ma.',
+  },
 };
 
 const buildDirectory = fileURLToPath(new URL('../build', import.meta.url));
@@ -284,7 +294,19 @@ for (const locale of ['en', 'pl']) {
     const { context, page } = await visitor({});
     try {
       await page.goto(`${base}/${locale}/`);
-      const entries = acquisitionSection(page, locale).getByRole('listitem');
+      const section = acquisitionSection(page, locale);
+
+      /* The sentence the whole section stands on. Four Android channels
+         listed without it would read as an Android app somebody can have,
+         and Journal ticket 11 says there is no Android project at all. It is
+         asserted here because every other assertion below still passes with
+         it deleted. */
+      assert.ok(
+        (await section.innerText()).includes(ACQUISITION[locale].noAndroid),
+        'the page listed Android channels without saying there is no Android app',
+      );
+
+      const entries = section.getByRole('listitem');
       assert.equal(await entries.count(), CHANNELS.length, 'the channel list changed length');
 
       /* No channel is live: Journal ticket 18 is what produces the artifacts.

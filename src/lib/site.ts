@@ -10,7 +10,9 @@ export const SITE_ORIGIN = 'https://genderdiary.barankiewicz.dev';
 
     The trailing slash is deliberate and the whole URL is the point: Start
     journal is a plain link to this and nothing else. No campaign parameter, no
-    referral identifier, and none of this site's language or theme state. */
+    referral identifier, and none of this site's language or theme state. The
+    browser tests assert it character for character, so changing it is a
+    deliberate edit here as well as in tests/site.test.mjs. */
 export const JOURNAL_URL = 'https://app.genderdiary.barankiewicz.dev/';
 
 export const LOCALES = ['en', 'pl'] as const;

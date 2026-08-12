@@ -11,7 +11,7 @@
   "sectionAcquisition": "Skąd je wziąć",
   "acquisitionIntro": "Gender Diary działa w przeglądarce. Otwiera się od razu, bez instalacji i bez konta.",
   "startJournal": "Otwórz dziennik",
-  "acquisitionAndroid": "Aplikacji na Androida jeszcze nie ma. Kiedy powstanie, będzie ją można zainstalować na cztery sposoby i żadnego z nich nie polecamy bardziej niż reszty. Każdy z nich zmieni się tutaj w link, kiedy zacznie działać.",
+  "acquisitionAndroid": "Aplikacji na Androida jeszcze nie ma. Kiedy powstanie, ma trafić do tych czterech miejsc i żadnego z nich nie polecamy bardziej niż pozostałych. Kiedy któreś zacznie działać, zmieni się tutaj w link.",
   "channelStatus": "Jeszcze niedostępne.",
   "channels": [
     {
@@ -20,11 +20,11 @@
     },
     {
       "name": "F-Droid",
-      "note": "Pakiet w głównym repozytorium F-Droida. F-Droid buduje go u siebie z kodu źródłowego, zamiast brać gotowy plik od nas."
+      "note": "Pakiet miałby trafić do głównego repozytorium F-Droida. F-Droid buduje u siebie z kodu źródłowego to, co rozdaje, zamiast brać gotowy plik od nas."
     },
     {
       "name": "Google Play",
-      "note": "Instalacja ze sklepu Google Play. Google wie wtedy, że aplikacja jest na twoim telefonie."
+      "note": "Instalacja przez Google Play znaczy, że Google wie, że aplikacja jest na twoim telefonie."
     },
     {
       "name": "Obtainium",

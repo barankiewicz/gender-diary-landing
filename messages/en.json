@@ -11,7 +11,7 @@
   "sectionAcquisition": "How to get it",
   "acquisitionIntro": "Gender Diary runs in a browser. It opens straight away, with nothing to install and no account to make.",
   "startJournal": "Start journal",
-  "acquisitionAndroid": "There is no Android app yet. When there is one, these are the four ways to install it, and none of them is the one we recommend. Each becomes a link here once that channel works.",
+  "acquisitionAndroid": "There is no Android app yet. When there is one, these four are the ways we mean to offer it, and none of them is the one we recommend. Each becomes a link here once that channel works.",
   "channelStatus": "Not available yet.",
   "channels": [
     {
@@ -20,11 +20,11 @@
     },
     {
       "name": "F-Droid",
-      "note": "The package in F-Droid's main repository. F-Droid builds it from source itself rather than taking a finished file from us."
+      "note": "F-Droid would carry it in the main repository, and it builds what it distributes from source itself rather than taking a finished file from us."
     },
     {
       "name": "Google Play",
-      "note": "The listing on Google Play. Installing from there means Google knows the app is on your phone."
+      "note": "Installing from Play means Google knows the app is on your phone."
     },
     {
       "name": "Obtainium",
