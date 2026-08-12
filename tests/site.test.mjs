@@ -437,6 +437,31 @@ test('the site keeps to its own origin and its own storage', async () => {
   }
 });
 
+// Layout: Polish runs longer than English, and no page may grow sideways
+
+/* Ticket 09's acceptance: Polish text lengths do not break any layout. The
+   measurable form of "broken" is a page wider than its viewport, which is
+   why base.css deliberately does not clip overflow at the body - a clip
+   there would hide from this loop the exact failure it exists to catch.
+   Both languages run so a regression names the language it broke in. */
+for (const locale of ['en', 'pl']) {
+  test(`${locale}: no page grows wider than a phone`, async () => {
+    const { context, page } = await visitor({});
+    try {
+      await page.setViewportSize({ width: 390, height: 844 });
+      for (const suffix of Object.values(PAGE_PATHS)) {
+        await page.goto(`${base}/${locale}/${suffix}`);
+        const overflow = await page.evaluate(
+          () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+        );
+        assert.equal(overflow, 0, `/${locale}/${suffix} scrolls sideways at 390px`);
+      }
+    } finally {
+      await context.close();
+    }
+  });
+}
+
 // Without scripting
 
 test('without scripting the page reads, in the system theme', async () => {

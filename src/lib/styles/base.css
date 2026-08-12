@@ -46,6 +46,9 @@
   --blob-white: rgba(255, 255, 255, 0.9);
   --glow: rgba(193, 75, 120, 0.18);
   --header: rgba(247, 247, 251, 0.78);
+  /* Text sitting on the vivid gradient (.cta, ::selection). The same
+     near-black in both themes, because the gradient underneath it is too. */
+  --ink-on-accent: #0c0f16;
   color-scheme: light;
 }
 
@@ -71,6 +74,8 @@
   }
 }
 
+/* Identical to the media-query block above, so a toggled dark and a system
+   dark paint the same page. A value changed in one is changed in the other. */
 :root[data-theme='dark'] {
   --theme: dark;
   --page: #0c0f16;
@@ -83,9 +88,9 @@
   --pink: #f5a9b8;
   --grad-a: #5bcefa;
   --grad-b: #f5a9b8;
-  --blob-blue: rgba(91, 206, 250, 0.3);
-  --blob-pink: rgba(245, 169, 184, 0.3);
-  --blob-white: rgba(242, 243, 247, 0.14);
+  --blob-blue: rgba(91, 206, 250, 0.42);
+  --blob-pink: rgba(245, 169, 184, 0.42);
+  --blob-white: rgba(242, 243, 247, 0.2);
   --glow: rgba(245, 169, 184, 0.22);
   --header: rgba(12, 15, 22, 0.72);
   color-scheme: dark;
@@ -103,13 +108,15 @@ body {
   font-size: 1.0625rem;
   line-height: 1.6;
   -webkit-font-smoothing: antialiased;
-  /* Wide compositions scroll inside their own containers, never the page. */
-  overflow-x: clip;
+  /* No overflow-x: clip here, deliberately. Wide compositions clip or scroll
+     inside their own containers (the hero clips its blobs, the tour strip
+     scrolls itself), and a clip at the body would also hide a layout broken
+     by Polish text lengths from the test that checks for exactly that. */
 }
 
 ::selection {
   background: var(--pink);
-  color: #0c0f16;
+  color: var(--ink-on-accent);
 }
 
 :focus-visible {
@@ -215,7 +222,7 @@ a {
   background-position: 0% 0%;
   border: none;
   border-radius: 999px;
-  color: #0c0f16;
+  color: var(--ink-on-accent);
   font-weight: 600;
   font-size: 1.0625rem;
   letter-spacing: -0.01em;
@@ -224,18 +231,14 @@ a {
   box-shadow: 0 8px 32px var(--glow);
   transition:
     background-position 0.35s,
-    transform 0.2s,
     box-shadow 0.2s;
 }
 
+/* Hover feedback that recolours is here; hover feedback that moves is in the
+   motion block below. */
 .cta:hover {
   background-position: 100% 0%;
-  transform: translateY(-2px);
   box-shadow: 0 12px 40px var(--glow);
-}
-
-.cta:active {
-  transform: translateY(0) scale(0.98);
 }
 
 /* An availability status is not a control and must not read as one. */
@@ -252,8 +255,10 @@ a {
 
 /* ---- Motion ------------------------------------------------------------ */
 
-/* Every keyframe on the site. Everything that references them does so inside
-   this block, so a reduced-motion visitor gets the finished page, static. */
+/* Every keyframe on the site, and every rule that moves something: the hover
+   transforms live here too, and LandingPage.svelte keeps its blob animation
+   declarations behind the same media query. A reduced-motion visitor gets
+   the finished page, static, with the recolouring hover feedback intact. */
 @media (prefers-reduced-motion: no-preference) {
   @keyframes rise {
     from {
@@ -317,6 +322,31 @@ a {
   .shimmer {
     background-size: 200% 100%;
     animation: shimmer 7s linear infinite;
+  }
+
+  /* Both classes at once: the animation shorthands above would override each
+     other (last rule wins), so an element that enters and then shimmers
+     needs the pair joined, each keeping its own delay. */
+  .enter.shimmer {
+    animation:
+      rise 0.8s cubic-bezier(0.16, 1, 0.3, 1) both,
+      shimmer 7s linear infinite;
+    animation-delay: calc(var(--enter, 0) * 120ms), 0s;
+  }
+
+  .cta {
+    transition:
+      background-position 0.35s,
+      transform 0.2s,
+      box-shadow 0.2s;
+  }
+
+  .cta:hover {
+    transform: translateY(-2px);
+  }
+
+  .cta:active {
+    transform: translateY(0) scale(0.98);
   }
 
   /* Scroll reveal, CSS only. Browsers without scroll-driven animations skip

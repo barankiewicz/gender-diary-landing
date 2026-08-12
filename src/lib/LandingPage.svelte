@@ -152,6 +152,10 @@
 
   /* ---- Hero ------------------------------------------------------------ */
 
+  /* 56px is the sticky header's one-row height. On viewports narrow enough
+     for the controls to wrap, the sum overshoots the viewport by a row and
+     the page simply scrolls; the mobile override below steps in before that
+     looks wrong. */
   .hero {
     position: relative;
     display: grid;
@@ -179,7 +183,6 @@
     right: -12vw;
     top: -18vw;
     background: radial-gradient(circle, var(--blob-blue), transparent 65%);
-    animation: drift-a 19s ease-in-out infinite;
   }
 
   .blob-b {
@@ -188,7 +191,6 @@
     right: 4vw;
     bottom: -16vw;
     background: radial-gradient(circle, var(--blob-pink), transparent 65%);
-    animation: drift-b 23s ease-in-out infinite;
   }
 
   .blob-c {
@@ -197,15 +199,22 @@
     right: 12vw;
     top: 28%;
     background: radial-gradient(circle, var(--blob-white), transparent 60%);
-    animation: drift-c 27s ease-in-out infinite;
   }
 
-  /* The keyframes and the .enter/.reveal classes live in base.css inside
-     prefers-reduced-motion: no-preference. With reduced motion the blobs
-     still paint, parked where their keyframes would start. */
-  @media (prefers-reduced-motion: reduce) {
-    .blob {
-      animation: none;
+  /* The drift keyframes live in base.css behind the same media query, which
+     is the gate for everything that moves on the site. With reduced motion
+     the blobs still paint, parked where their drift would start. */
+  @media (prefers-reduced-motion: no-preference) {
+    .blob-a {
+      animation: drift-a 19s ease-in-out infinite;
+    }
+
+    .blob-b {
+      animation: drift-b 23s ease-in-out infinite;
+    }
+
+    .blob-c {
+      animation: drift-c 27s ease-in-out infinite;
     }
   }
 
@@ -286,18 +295,28 @@
     font-weight: 500;
     text-decoration: none;
     overflow: clip;
-    transition:
-      border-color 0.25s,
-      transform 0.2s;
+    transition: border-color 0.25s;
   }
 
   .badge:hover {
     border-color: var(--blue);
-    transform: translateY(-2px);
   }
 
-  .badge:active {
-    transform: scale(0.97);
+  /* The badge's moving feedback, behind the gate its recolouring is not. */
+  @media (prefers-reduced-motion: no-preference) {
+    .badge {
+      transition:
+        border-color 0.25s,
+        transform 0.2s;
+    }
+
+    .badge:hover {
+      transform: translateY(-2px);
+    }
+
+    .badge:active {
+      transform: scale(0.97);
+    }
   }
 
   /* ---- Overview ---------------------------------------------------------- */
@@ -435,7 +454,7 @@
     border-radius: 1rem;
     border: 1px solid var(--line);
     background: var(--surface);
-    font-size: 0.9688rem;
+    font-size: 0.9375rem;
     color: var(--muted);
   }
 
