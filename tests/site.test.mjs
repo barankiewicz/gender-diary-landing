@@ -1525,6 +1525,14 @@ const contrastFloor = ({ px, bold }) => (px >= 24 || (px >= 18.66 && bold) ? 3 :
     every time rather than sampling one instant of a moving layer. */
 const DRIFT_PHASES = [0, 5, 11, 17];
 
+/** Waits for the page to be laid out and painted again. Two frames rather
+    than one: the first lets a style change take effect, the second lets the
+    compositor hand back something stable to measure or photograph. */
+const nextFrame = (page) =>
+  page.evaluate(
+    () => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))),
+  );
+
 /** A page on about:blank whose only job is to decode screenshots and read
     pixels out of them. */
 async function pixelDecoder() {
@@ -1590,11 +1598,7 @@ async function scrimFailures(page, decoder) {
         node.style.animationName = 'none';
       }
     }, DRIFT_PHASES[pass % DRIFT_PHASES.length]);
-    /* Two frames: one for the pause and the parked drift to take effect, one
-       for the compositor to hand back a stable page to measure. */
-    await page.evaluate(
-      () => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))),
-    );
+    await nextFrame(page);
 
     /* The measurements are taken before the ink is hidden, so each probe
        carries the colour the text is really painted in. */
@@ -1672,14 +1676,11 @@ async function scrimFailures(page, decoder) {
       }, visible);
 
     await paintText(false);
-    /* A style change needs a frame before it is on screen, and the screenshot
-       does not wait for one. Without this the camera catches the page as it
-       was, every sample lands on a letter, and the whole measurement quietly
-       reports the ink's contrast against itself. The check below is what
-       stops that failing silently if it ever comes back. */
-    await page.evaluate(
-      () => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))),
-    );
+    /* The screenshot does not wait for a frame of its own, so without this the
+       camera catches the page as it was, every sample lands on a letter, and
+       the measurement quietly reports the ink's contrast against itself. The
+       check below is what stops that failing silently if it comes back. */
+    await nextFrame(page);
     const stillPainted = await page.evaluate(() =>
       [...document.querySelectorAll('main *')].filter(
         (node) => !/,\s*0\)$/.test(getComputedStyle(node).color),
@@ -1995,6 +1996,92 @@ test('the hand-rolled fallback reveals items in a browser that cannot scrub', as
   }
 });
 
+for (const locale of ['en', 'pl']) {
+  test(`${locale}: the pinned tour loses no caption at 200% text`, async () => {
+    /* The pin holds the strip at the height of one window and clips it, which
+       is what stops a strip several windows wide from widening the document.
+       Clipping the other axis as well cut 463px of English and 415px of
+       Polish off the bottom of every card at 200% text on a 390px screen: a
+       caption runs about fifteen lines there, so the card is 1250px tall
+       against a stage of 788, and the text simply was not on the page. At
+       exactly the text size somebody picks because they need it. */
+    const { context, page } = await visitor({});
+    try {
+      await page.setViewportSize({ width: 390, height: 844 });
+      await page.goto(`${base}/${locale}/`);
+      await page.evaluate(() => {
+        document.documentElement.style.fontSize = '200%';
+      });
+      await nextFrame(page);
+
+      const lost = await page.evaluate(() => {
+        const stage = document.querySelector('.tour-stage');
+        /* scrollHeight, not clientHeight: what a reader can reach is the whole
+           scrollable area, and the question is whether any of a card falls
+           outside even that. */
+        return [...document.querySelectorAll('.tour-strip li')]
+          .map((card) => ({
+            screen: card.querySelector('h3').textContent,
+            beyond: Math.round(card.getBoundingClientRect().height - stage.scrollHeight),
+          }))
+          .filter((card) => card.beyond > 0);
+      });
+      assert.deepEqual(lost, [], `/${locale}/ cuts the bottom off a tour card at 200% text`);
+    } finally {
+      await context.close();
+    }
+  });
+}
+
+for (const scheme of ['light', 'dark']) {
+  test(`${scheme}: the hero stroke is painted in the flag's colours`, async () => {
+    /* The one part of the stroke that could fail silently. Everything else
+       about it is asserted through animation-name, and a gradient whose stops
+       did not resolve still animates: it just draws a black line under the
+       headline, in both themes, and nothing says so. */
+    const { context, page } = await visitor({ colorScheme: scheme });
+    try {
+      await page.goto(`${base}/en/`);
+      assert.equal(await themeNow(page), scheme, `asked for ${scheme} and got the other palette`);
+
+      const painted = await page.evaluate(() => {
+        const root = getComputedStyle(document.documentElement);
+        const stop = (selector) =>
+          getComputedStyle(document.querySelector(selector)).stopColor;
+        const token = (name) => {
+          /* Resolved through the browser, because --grad-a is a hex and
+             stop-color comes back as rgb. */
+          const probe = document.createElement('span');
+          probe.style.color = root.getPropertyValue(name).trim();
+          document.body.append(probe);
+          const resolved = getComputedStyle(probe).color;
+          probe.remove();
+          return resolved;
+        };
+        return {
+          start: stop('.stop-start'),
+          mid: stop('.stop-mid'),
+          end: stop('.stop-end'),
+          gradA: token('--grad-a'),
+          gradB: token('--grad-b'),
+        };
+      });
+
+      assert.equal(painted.start, painted.gradA, 'the stroke does not start in the theme blue');
+      assert.equal(painted.end, painted.gradB, 'the stroke does not end in the theme pink');
+      for (const [where, colour] of Object.entries(painted)) {
+        assert.notEqual(
+          colour,
+          'rgb(0, 0, 0)',
+          `the ${where} of the stroke resolved to black, so a var() did not reach it`,
+        );
+      }
+    } finally {
+      await context.close();
+    }
+  });
+}
+
 test('the motion system brought no dependency with it', async () => {
   /* Ticket 17, and Alicja's answer about Rive: the pinning, the scrubbing and
      the drawn stroke are CSS, and the fallback is a file in this repository.
@@ -2009,10 +2096,24 @@ test('the motion system brought no dependency with it', async () => {
     'the site gained a runtime dependency',
   );
 
-  const banned = ['gsap', 'motion', 'framer', 'rive', 'lottie', 'anime', 'lenis', 'aos'];
+  /* Matched whole, not as substrings. "motion" inside a package name catches
+     half the ecosystem and "aos" catches any word containing it, and a test
+     that fails on an innocent dependency gets deleted rather than fixed. */
+  const banned = new Set([
+    'gsap',
+    'motion',
+    'framer-motion',
+    'animejs',
+    'lenis',
+    'aos',
+    'lottie-web',
+    '@rive-app/canvas',
+    '@rive-app/webgl',
+    '@lottiefiles/dotlottie-web',
+  ]);
   for (const name of Object.keys(manifest.devDependencies ?? {})) {
     assert.ok(
-      !banned.some((library) => name.includes(library)),
+      !banned.has(name),
       `${name} is an animation library, and this page does its motion in CSS`,
     );
   }

@@ -23,41 +23,41 @@
       <div class="headline-block enter" style:--enter={1}>
         <p class="headline">{m.hero.headline}</p>
 
-      <!-- The flag as a line rather than as stripes: one hand-drawn curve
-           stroked blue to white to pink, drawing itself once the headline has
-           landed. Alicja asked for this in Rive (2026-08-12); it is SVG
-           because Rive would be 150-200kb of runtime and WASM against a
-           ticket that argues 40kb is already too much, would need
-           wasm-unsafe-eval in a policy that has no eval anywhere in it, and
-           would leave a visitor without scripting looking at an empty canvas.
-           This is markup, so they get the line too.
+        <!-- The flag as a line rather than as stripes: one hand-drawn curve
+             stroked blue to white to pink, drawing itself once the headline has
+             landed. Alicja asked for this in Rive (2026-08-12); it is SVG
+             because Rive would be 150-200kb of runtime and WASM against a
+             ticket that argues 40kb is already too much, would need
+             wasm-unsafe-eval in a policy that has no eval anywhere in it, and
+             would leave a visitor without scripting looking at an empty canvas.
+             This is markup, so they get the line too.
 
-           pathLength normalises the curve to 1 unit, which is what lets the
-           dash in base.css be written as a fraction rather than as a length
-           somebody has to measure again after every edit to the `d`. -->
-      <svg
-        class="flag-stroke"
-        viewBox="0 0 400 14"
-        preserveAspectRatio="none"
-        aria-hidden="true"
-        focusable="false"
-      >
-        <defs>
-          <linearGradient id="flag-stroke-gradient" x1="0" y1="0" x2="1" y2="0">
-            <stop offset="0%" stop-color="var(--grad-a)" />
-            <stop offset="50%" stop-color="var(--stroke-mid)" />
-            <stop offset="100%" stop-color="var(--grad-b)" />
-          </linearGradient>
-        </defs>
-        <path
-          pathLength="1"
-          d="M4 10 C 78 3, 148 12, 226 6 S 344 3, 396 9"
-          fill="none"
-          stroke="url(#flag-stroke-gradient)"
-          stroke-width="3"
-          stroke-linecap="round"
-        />
-      </svg>
+             pathLength normalises the curve to 1 unit, which is what lets the
+             dash in base.css be written as a fraction rather than as a length
+             somebody has to measure again after every edit to the `d`. -->
+        <svg
+          class="flag-stroke"
+          viewBox="0 0 400 14"
+          preserveAspectRatio="none"
+          aria-hidden="true"
+          focusable="false"
+        >
+          <defs>
+            <linearGradient id="flag-stroke-gradient" x1="0" y1="0" x2="1" y2="0">
+              <stop class="stop-start" offset="0%" />
+              <stop class="stop-mid" offset="50%" />
+              <stop class="stop-end" offset="100%" />
+            </linearGradient>
+          </defs>
+          <path
+            pathLength="1"
+            d="M4 10 C 78 3, 148 12, 226 6 S 344 3, 396 9"
+            fill="none"
+            stroke="url(#flag-stroke-gradient)"
+            stroke-width="3"
+            stroke-linecap="round"
+          />
+        </svg>
       </div>
 
       <p class="subheadline enter" style:--enter={2}>{m.hero.subheadline}</p>
@@ -120,7 +120,7 @@
          ratio its screenshot will have, so ticket 16 drops the pictures in
          and moves no layout; until then the frame holds only this section's
          colours, and the page describes no picture that is not there. -->
-    <div class="tour-pin">
+    <div class="tour-pin" style:--tour-cards={m.tour.length}>
       <div class="tour-stage">
         <ol class="tour-strip">
           {#each m.tour as screen, index (screen.screen)}
@@ -154,9 +154,9 @@
                  its own separator. -->
             {#each group.paragraphs as paragraph, index (index)}
               {#if typeof paragraph === 'string'}
-                <p class="plain reveal" style:--reveal={index}>{paragraph}</p>
+                <p class="plain reveal" style:--reveal-index={index}>{paragraph}</p>
               {:else}
-                <p class="reveal" style:--reveal={index}><strong>{paragraph.lead}</strong>{paragraph.rest}</p>
+                <p class="reveal" style:--reveal-index={index}><strong>{paragraph.lead}</strong>{paragraph.rest}</p>
               {/if}
             {/each}
           </div>
@@ -186,7 +186,7 @@
            ticket 18). -->
       <ul class="channels">
         {#each m.channels as channel, index (channel.name)}
-          <li class="reveal" style:--reveal={index}>
+          <li class="reveal" style:--reveal-index={index}>
             <strong>{channel.name}</strong>
             <span class="status">{m.channelStatus}</span>
             <p>{channel.note}</p>
@@ -261,6 +261,172 @@
     margin-bottom: 0;
   }
 
+  /* ---- Hero ------------------------------------------------------------ */
+
+  /* 56px is the sticky header's one-row height. On viewports narrow enough
+     for the controls to wrap, the sum overshoots the viewport by a row and
+     the page simply scrolls; the mobile override below steps in before that
+     looks wrong.
+
+     No `overflow: clip` any more. It was here to hold the aurora inside the
+     hero, and holding the aurora inside the hero is exactly what put a hard
+     horizontal line across the page at the first scroll (ticket 17). The
+     layer is fixed to the viewport in Aura.svelte now and clips itself. */
+  .hero {
+    position: relative;
+    display: grid;
+    align-items: center;
+    min-height: calc(100dvh - 56px);
+  }
+
+  /* min-width: 0 because this is a grid item, and a grid track's automatic
+     minimum is its content's min-content size. At 200% text the longest word
+     in the headline is wider than a phone, so the track grew to fit it and
+     took the document sideways with it. The clip that used to be on .hero hid
+     that by cutting the word off instead, which is not better. */
+  .hero-inner {
+    position: relative;
+    width: 100%;
+    min-width: 0;
+    max-width: 68rem;
+    margin: 0 auto;
+    padding: 2rem clamp(1rem, 4vw, 2.5rem) 4rem;
+  }
+
+  /* No text-transform here: the tests read the site name off this element,
+     and innerText reports the transformed casing. */
+  h1 {
+    font-size: 1.25rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    margin: 0 0 2.5rem;
+    background: linear-gradient(92deg, var(--grad-a), var(--grad-b));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    width: fit-content;
+  }
+
+  /* Ink for most of its length, and the flag's two colours at the end of the
+     last line. The endpoints are the theme's text-safe pair, so the gradient
+     never trades contrast for the effect.
+
+     min() around the clamp's floor, for the reason the .channels grid uses
+     one: a floor written in rem is a promise about the smallest this may be,
+     and at 200% text 2.4rem is 76.8px, which sets "transition" wider than the
+     phone holding it. The min() lets the floor fall back to what the viewport
+     can carry and leaves the 2.4rem intent untouched everywhere it fits. */
+  /* Shrink-wrapped so that .flag-stroke below can be exactly as wide as the
+     longest line of the headline, whatever text-wrap: balance decides that
+     is, in either language. */
+  .headline-block {
+    width: fit-content;
+    max-width: 100%;
+    margin: 0 0 1.5rem;
+  }
+
+  /* The stop colours are CSS rather than stop-color attributes on the stops
+     themselves. A var() inside an SVG presentation attribute resolves in
+     Chromium and has a history of not resolving elsewhere, and the way it
+     fails is the stop falling back to black: the one part of this that could
+     quietly stop being the flag. As the stop-color property it is ordinary
+     CSS everywhere. */
+  .stop-start {
+    stop-color: var(--grad-a);
+  }
+
+  .stop-mid {
+    stop-color: var(--stroke-mid);
+  }
+
+  .stop-end {
+    stop-color: var(--grad-b);
+  }
+
+  .flag-stroke {
+    display: block;
+    width: 100%;
+    height: 0.85rem;
+    margin-top: 0.35rem;
+    overflow: visible;
+  }
+
+  .headline {
+    font-size: clamp(min(2.4rem, 12vw), 7vw, 4.75rem);
+    font-weight: 600;
+    line-height: 1.05;
+    letter-spacing: -0.03em;
+    text-wrap: balance;
+    margin: 0;
+    max-width: 17ch;
+    background: linear-gradient(105deg, var(--ink) 45%, var(--grad-a) 78%, var(--grad-b) 96%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  .subheadline {
+    font-size: clamp(1.1rem, 2vw, 1.35rem);
+    font-weight: 400;
+    color: var(--muted);
+    max-width: 44ch;
+    margin: 0 0 2.75rem;
+  }
+
+  .hero-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 1.25rem 2rem;
+  }
+
+  .badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  /* Store-badge-shaped, glass over the aura. */
+  .badge {
+    position: relative;
+    display: inline-block;
+    padding: 0.55rem 1.1rem;
+    border-radius: 999px;
+    border: 1px solid var(--line);
+    background: var(--panel);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    font-size: 0.9375rem;
+    font-weight: 500;
+    text-decoration: none;
+    overflow: clip;
+    transition: border-color 0.25s;
+  }
+
+  .badge:hover {
+    border-color: var(--blue);
+  }
+
+  /* The badge's moving feedback, behind the gate its recolouring is not. */
+  @media (prefers-reduced-motion: no-preference) {
+    .badge {
+      transition:
+        border-color 0.25s,
+        transform 0.2s;
+    }
+
+    .badge:hover {
+      transform: translateY(-2px);
+    }
+
+    .badge:active {
+      transform: scale(0.97);
+    }
+  }
+
   /* ---- Overview ---------------------------------------------------------- */
 
   .lede :global(p) {
@@ -311,7 +477,6 @@
      strip runs the full width of the window, so the aura is at full strength
      around it rather than behind a scrim. */
   .tour {
-    max-width: none;
     padding: clamp(3rem, 8vh, 5.5rem) 0 0;
   }
 
@@ -344,8 +509,22 @@
       /* The scroll distance the pan is spent over. The stage sticks for the
          height of this box less its own, so 320vh of page buys roughly 220vh
          of pinned pan. */
+      /* The scroll the pan is spent over, which is the strip's own overflow
+         and not a fixed guess. At 320vh flat, a 2560px window - where eight
+         19rem frames barely exceed the viewport and there is almost nothing
+         left to pan - still pinned the page for two windowfuls of dead
+         scroll. Derived like this the pan runs at 1:1 with the scrollbar, and
+         on a window wide enough to hold the whole strip the pin is one screen
+         and effectively stands down.
+
+         --tour-cards is stamped by the component, so the count comes from the
+         message catalogue rather than from a number written down twice. */
       .tour-pin {
-        height: 320vh;
+        --strip: calc(
+          var(--tour-cards) * min(19rem, 78vw) + (var(--tour-cards) - 1) * 1.25rem + 2 *
+            clamp(1rem, 4vw, 2.5rem)
+        );
+        height: calc(100dvh - 56px + max(0px, var(--strip) - 100vw));
         view-timeline: --tour block;
       }
 
@@ -354,11 +533,25 @@
         top: 56px;
         height: calc(100dvh - 56px);
         display: flex;
-        align-items: center;
-        /* Clip rather than scroll now that the strip is driven rather than
-           dragged, and the clip is also what keeps a strip several windows
-           wide from widening the document. */
-        overflow: clip;
+        /* `safe` matters here. Plain `center` on a card taller than the stage
+           spills it off both ends equally, and the half above the start edge
+           is unreachable however the overflow is handled: scrollHeight does
+           not extend backwards. `safe` puts the whole overflow at the end,
+           where scrolling can reach it. */
+        align-items: safe center;
+        /* Sideways is clipped, because the strip is driven rather than
+           dragged now and the clip is also what stops a strip several windows
+           wide from widening the document.
+
+           Downwards is not, and that is not symmetry for its own sake. At
+           200% text on a 390px screen a caption runs about fifteen lines, and
+           a card is then 1250px tall against a stage of 788: clipping both
+           axes cut 463px of English and 415px of Polish off the bottom of
+           every card, silently, at exactly the text size somebody chooses
+           because they need it. Nothing is lost this way. At ordinary text
+           sizes the card fits and no scrollbar appears at all. */
+        overflow-x: clip;
+        overflow-y: auto;
         scroll-snap-type: none;
       }
 
@@ -385,7 +578,7 @@
 
   .tour-strip li {
     flex: 0 0 min(19rem, 78vw);
-    scroll-snap-align: center;
+    scroll-snap-align: start;
   }
 
   /* The aspect ratio is declared now and the picture arrives later, so
@@ -455,9 +648,14 @@
     margin: 0 0 1rem;
   }
 
+  /* Two columns of unequal width, against acquisition's equal auto-fill
+     cards. Losing the boxes was most of separating these two sections, but
+     both were still laying out on the same even two-up track, back to back,
+     in the same body column. An asymmetric pair reads as a column of prose
+     with notes beside it rather than as another grid. */
   .entries {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(min(19rem, 100%), 1fr));
+    grid-template-columns: minmax(0, 1.45fr) minmax(0, 1fr);
     gap: 1.1rem 2.5rem;
   }
 
@@ -559,154 +757,6 @@
     margin-top: 1.5rem;
   }
 
-  /* ---- Hero ------------------------------------------------------------ */
-
-  /* 56px is the sticky header's one-row height. On viewports narrow enough
-     for the controls to wrap, the sum overshoots the viewport by a row and
-     the page simply scrolls; the mobile override below steps in before that
-     looks wrong.
-
-     No `overflow: clip` any more. It was here to hold the aurora inside the
-     hero, and holding the aurora inside the hero is exactly what put a hard
-     horizontal line across the page at the first scroll (ticket 17). The
-     layer is fixed to the viewport in Aura.svelte now and clips itself. */
-  .hero {
-    position: relative;
-    display: grid;
-    align-items: center;
-    min-height: calc(100dvh - 56px);
-  }
-
-  /* min-width: 0 because this is a grid item, and a grid track's automatic
-     minimum is its content's min-content size. At 200% text the longest word
-     in the headline is wider than a phone, so the track grew to fit it and
-     took the document sideways with it. The clip that used to be on .hero hid
-     that by cutting the word off instead, which is not better. */
-  .hero-inner {
-    position: relative;
-    width: 100%;
-    min-width: 0;
-    max-width: 68rem;
-    margin: 0 auto;
-    padding: 2rem clamp(1rem, 4vw, 2.5rem) 4rem;
-  }
-
-  /* No text-transform here: the tests read the site name off this element,
-     and innerText reports the transformed casing. */
-  h1 {
-    font-size: 1.25rem;
-    font-weight: 700;
-    letter-spacing: 0.04em;
-    margin: 0 0 2.5rem;
-    background: linear-gradient(92deg, var(--grad-a), var(--grad-b));
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
-    width: fit-content;
-  }
-
-  /* Ink for most of its length, and the flag's two colours at the end of the
-     last line. The endpoints are the theme's text-safe pair, so the gradient
-     never trades contrast for the effect.
-
-     min() around the clamp's floor, for the reason the .channels grid uses
-     one: a floor written in rem is a promise about the smallest this may be,
-     and at 200% text 2.4rem is 76.8px, which sets "transition" wider than the
-     phone holding it. The min() lets the floor fall back to what the viewport
-     can carry and leaves the 2.4rem intent untouched everywhere it fits. */
-  /* Shrink-wrapped so that .flag-stroke below can be exactly as wide as the
-     longest line of the headline, whatever text-wrap: balance decides that
-     is, in either language. */
-  .headline-block {
-    width: fit-content;
-    max-width: 100%;
-    margin: 0 0 1.5rem;
-  }
-
-  .flag-stroke {
-    display: block;
-    width: 100%;
-    height: 0.85rem;
-    margin-top: 0.35rem;
-    overflow: visible;
-  }
-
-  .headline {
-    font-size: clamp(min(2.4rem, 12vw), 7vw, 4.75rem);
-    font-weight: 600;
-    line-height: 1.05;
-    letter-spacing: -0.03em;
-    text-wrap: balance;
-    margin: 0;
-    max-width: 17ch;
-    background: linear-gradient(105deg, var(--ink) 45%, var(--grad-a) 78%, var(--grad-b) 96%);
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
-  }
-
-  .subheadline {
-    font-size: clamp(1.1rem, 2vw, 1.35rem);
-    font-weight: 400;
-    color: var(--muted);
-    max-width: 44ch;
-    margin: 0 0 2.75rem;
-  }
-
-  .hero-actions {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: center;
-    gap: 1.25rem 2rem;
-  }
-
-  .badges {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.6rem;
-    list-style: none;
-    margin: 0;
-    padding: 0;
-  }
-
-  /* Store-badge-shaped, glass over the aura. */
-  .badge {
-    position: relative;
-    display: inline-block;
-    padding: 0.55rem 1.1rem;
-    border-radius: 999px;
-    border: 1px solid var(--line);
-    background: var(--panel);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    font-size: 0.9375rem;
-    font-weight: 500;
-    text-decoration: none;
-    overflow: clip;
-    transition: border-color 0.25s;
-  }
-
-  .badge:hover {
-    border-color: var(--blue);
-  }
-
-  /* The badge's moving feedback, behind the gate its recolouring is not. */
-  @media (prefers-reduced-motion: no-preference) {
-    .badge {
-      transition:
-        border-color 0.25s,
-        transform 0.2s;
-    }
-
-    .badge:hover {
-      transform: translateY(-2px);
-    }
-
-    .badge:active {
-      transform: scale(0.97);
-    }
-  }
-
   /* ---- Narrow ------------------------------------------------------------------ */
 
   /* The rail stops being a rail. Below this the two columns stack, and a
@@ -724,6 +774,10 @@
 
     .standfirst {
       max-width: 60ch;
+    }
+
+    .entries {
+      grid-template-columns: minmax(0, 1fr);
     }
   }
 

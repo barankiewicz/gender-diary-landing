@@ -70,11 +70,14 @@
     background: radial-gradient(circle, var(--blob-white), transparent 60%);
   }
 
-  /* Atmosphere: the drift says the page is a surface with weather rather than
-     a printed sheet, and it is the one thing on the site that loops. The
-     keyframes live in base.css behind the same media query, which is the gate
-     for everything that moves here. With reduced motion the blobs still paint,
-     parked where their drift would start. */
+  /* Hierarchy: a still gradient reads as a picture someone placed behind the
+     words, and a reader starts looking at it. A moving one reads as the
+     surface the page is on, which is what keeps it underneath the text rather
+     than competing with it. The one thing on the site that loops.
+
+     The keyframes live in base.css behind the same media query, which is the
+     gate for everything that moves here. With reduced motion the blobs still
+     paint, parked where their drift would start. */
   @media (prefers-reduced-motion: no-preference) {
     .blob-a {
       animation: drift-a 19s ease-in-out infinite;

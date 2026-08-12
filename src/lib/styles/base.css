@@ -383,15 +383,18 @@ a {
     }
   }
 
-  /* Entrance for the hero, stamped element by element with --enter. */
+  /* Sequence: the wordmark, the headline, the subheadline and the actions
+     arrive in that order, which is the order they are meant to be read in.
+     Stamped element by element with --enter. */
   .enter {
     animation: rise 0.8s cubic-bezier(0.16, 1, 0.3, 1) both;
     animation-delay: calc(var(--enter, 0) * 120ms);
   }
 
-  /* A slow sheen across gradient-clipped text. The element brings its own
-     gradient; this only moves it, so a reduced-motion visitor sees the same
-     colours standing still. */
+  /* Hierarchy: the sheen is only ever on the wordmark, which is what marks it
+     as the product's mark rather than as the first heading of the page. The
+     element brings its own gradient and this only moves it, so a
+     reduced-motion visitor sees the same colours standing still. */
   .shimmer {
     background-size: 200% 100%;
     animation: shimmer 7s linear infinite;
@@ -442,8 +445,8 @@ a {
          to give it: two cards side by side enter the viewport on the same
          frame and would otherwise land on the same one. Capped at the fifth
          item so a long list does not push its tail off the bottom. */
-      animation-range: entry calc(5% + min(var(--reveal, 0), 4) * 7%) entry
-        calc(55% + min(var(--reveal, 0), 4) * 7%);
+      animation-range: entry calc(5% + min(var(--reveal-index, 0), 4) * 7%) entry
+        calc(55% + min(var(--reveal-index, 0), 4) * 7%);
     }
   }
 
@@ -462,7 +465,7 @@ a {
     transition:
       opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1),
       transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
-    transition-delay: calc(min(var(--reveal, 0), 4) * 70ms);
+    transition-delay: calc(min(var(--reveal-index, 0), 4) * 70ms);
   }
 
   /* Sequence: the line finishes drawing after the headline has landed and

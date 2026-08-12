@@ -14,8 +14,8 @@
      including" on the page and as a reworded sentence in the copy tests. -->
 {#each paragraphs as paragraph, index (index)}
   {#if typeof paragraph === 'string'}
-    <p class:reveal style:--reveal={index}>{paragraph}</p>
+    <p class:reveal style:--reveal-index={index}>{paragraph}</p>
   {:else}
-    <p class:reveal style:--reveal={index}><strong>{paragraph.lead}</strong>{paragraph.rest}</p>
+    <p class:reveal style:--reveal-index={index}><strong>{paragraph.lead}</strong>{paragraph.rest}</p>
   {/if}
 {/each}
