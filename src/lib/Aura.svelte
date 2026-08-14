@@ -132,9 +132,11 @@
   {#if strength === 'full'}
     <canvas class="aura-canvas" width="1600" height="900" bind:this={canvas}></canvas>
   {/if}
-  <div class="blob blob-a"></div>
-  <div class="blob blob-b"></div>
-  <div class="blob blob-c"></div>
+  {#if strength !== 'full' || !canvasActive}
+    <div class="blob blob-a"></div>
+    <div class="blob blob-b"></div>
+    <div class="blob blob-c"></div>
+  {/if}
 </div>
 
 <style>
@@ -164,10 +166,6 @@
     width: 100%;
     height: 100%;
     pointer-events: none;
-  }
-
-  .full-canvas .blob {
-    opacity: 0;
   }
 
   .blob {
