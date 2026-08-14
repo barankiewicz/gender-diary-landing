@@ -392,7 +392,7 @@
     text-wrap: balance;
     margin: 0;
     max-width: 17ch;
-    background: linear-gradient(105deg, var(--ink) 45%, var(--grad-a) 78%, var(--grad-b) 96%);
+    background: linear-gradient(105deg, var(--headline-base) 45%, var(--grad-a) 78%, var(--grad-b) 96%);
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;

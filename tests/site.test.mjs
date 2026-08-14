@@ -110,7 +110,11 @@ async function tabTo(page, name, limit = 20) {
   await page.evaluate(() => document.activeElement?.blur());
   for (let i = 0; i < limit; i++) {
     await page.keyboard.press('Tab');
-    const focused = await page.evaluate(() => document.activeElement?.textContent?.trim() || '');
+    const focused = await page.evaluate(() => {
+      const el = document.activeElement;
+      if (!el) return '';
+      return (el.getAttribute('aria-label') || el.textContent || '').trim();
+    });
     if (focused === name) return true;
   }
   return false;
@@ -312,21 +316,14 @@ test('the theme control overrides the system theme and is remembered', async () 
   const { context, page } = await visitor({ colorScheme: 'light' });
   try {
     await page.goto(`${base}/en/`);
-    await page.getByRole('button', { name: 'Dark' }).click();
+    await page.getByRole('switch', { name: 'Light' }).click();
     assert.equal(await themeNow(page), 'dark');
 
     await page.reload();
     assert.equal(await themeNow(page), 'dark');
-    /* The theme is right before this line and the control catches up after it.
-       app.html stamps the theme before first paint; the button learns what it
-       is showing when the component mounts, which is after the dynamic imports
-       land, so reading aria-pressed as soon as reload returns is a race - the
-       same one the keyboard test above waits out, and the same fix. Ticket 11
-       lost it consistently by moving hydration about three milliseconds later,
-       which is the sort of margin this assertion was winning by. */
     await page.waitForLoadState('networkidle');
     assert.equal(
-      await page.getByRole('button', { name: 'Dark' }).getAttribute('aria-pressed'),
+      await page.getByRole('switch', { name: 'Dark' }).getAttribute('aria-checked'),
       'true',
       'the control showed a different choice than the page was using',
     );
@@ -343,7 +340,7 @@ test('a reload with a stored dark choice never paints light', async () => {
   const { context, page } = await visitor({ colorScheme: 'light' });
   try {
     await page.goto(`${base}/en/`);
-    await page.getByRole('button', { name: 'Dark' }).click();
+    await page.getByRole('switch', { name: 'Light' }).click();
 
     await page.reload();
     assert.equal(await firstFrameTheme(page), 'dark', 'the first frame after a reload was light');
@@ -353,18 +350,15 @@ test('a reload with a stored dark choice never paints light', async () => {
   }
 });
 
-test('choosing system hands the theme back to the system', async () => {
+test('the theme switch flips in both directions', async () => {
   const { context, page } = await visitor({ colorScheme: 'dark' });
   try {
     await page.goto(`${base}/en/`);
-    await page.getByRole('button', { name: 'Light' }).click();
+    await page.getByRole('switch', { name: 'Dark' }).click();
     assert.equal(await themeNow(page), 'light');
 
-    await page.getByRole('button', { name: 'System' }).click();
+    await page.getByRole('switch', { name: 'Light' }).click();
     assert.equal(await themeNow(page), 'dark');
-
-    await page.reload();
-    assert.equal(await firstFrameTheme(page), 'dark', 'the stored choice outlived its removal');
   } finally {
     await context.close();
   }
@@ -508,7 +502,7 @@ test('the site keeps to its own origin and its own storage', async () => {
   try {
     await page.goto(`${base}/`);
     await page.waitForURL(`${base}/pl/`);
-    await page.getByRole('button', { name: 'Ciemny' }).click();
+    await page.getByRole('switch', { name: 'Jasny' }).click();
     await page.getByRole('link', { name: 'English' }).click();
     await page.waitForURL(`${base}/en/`);
 
@@ -577,7 +571,7 @@ for (const locale of ['en', 'pl']) {
 
       const oppositeLanguage = locale === 'en' ? 'Polski' : 'English';
       const expectedPath = locale === 'en' ? '/pl/' : '/en/';
-      const darkLabel = locale === 'en' ? 'Dark' : 'Ciemny';
+      const lightLabel = locale === 'en' ? 'Light' : 'Jasny';
 
       /* The theme control goes first, on the page as it was loaded. Switching
          language is a full document load, and pressing a theme button on the
@@ -585,7 +579,7 @@ for (const locale of ['en', 'pl']) {
          button is on screen as soon as app.html sets data-js, but does not
          answer until the component has hydrated. That race belongs to the
          test, not to the person, so it is simply avoided here. */
-      assert.ok(await tabTo(page, darkLabel), `Tab never reached the theme button: ${darkLabel}`);
+      assert.ok(await tabTo(page, lightLabel), `Tab never reached the theme switch: ${lightLabel}`);
 
       const ring = await page.evaluate(() => {
         const style = getComputedStyle(document.activeElement);
@@ -639,18 +633,13 @@ for (const locale of ['en', 'pl']) {
         );
       }
 
-      /* The theme buttons are a named group so a reader meets them as one
-         control rather than three loose buttons. */
-      const themeGroup = page.getByRole('group', { name: themeLabel });
-      assert.equal(await themeGroup.count(), 1, `the theme buttons are not grouped as ${themeLabel}`);
-
-      for (const label of locale === 'en' ? ['System', 'Light', 'Dark'] : ['Systemowy', 'Jasny', 'Ciemny']) {
-        assert.equal(
-          await themeGroup.getByRole('button', { name: label, exact: true }).count(),
-          1,
-          `the theme group offers no button named ${label}`,
-        );
-      }
+      const themeSwitch = page.getByRole('switch');
+      assert.equal(await themeSwitch.count(), 1, `the theme switch was not exposed as one control`);
+      assert.equal(
+        await themeSwitch.getAttribute('aria-labelledby'),
+        'theme-label',
+        `the theme switch is not labelled by ${themeLabel}`,
+      );
     } finally {
       await context.close();
     }

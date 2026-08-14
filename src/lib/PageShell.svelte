@@ -118,28 +118,32 @@
     <a class="brand" href={pathFor(locale)}>{m.pageTitle}</a>
   {/if}
 
-  <nav class="control" aria-label={m.languageLabel}>
+  <nav class="control language-control" aria-label={m.languageLabel} data-locale={locale}>
     <span class="control-label">{m.languageLabel}</span>
-    {#each LOCALES as option (option)}
-      <!-- The other language of this page, not of the site: somebody halfway
-           down the privacy page who switches language wants the privacy page.
+    <div class="switch" role="group" aria-label={m.languageLabel}>
+      {#each LOCALES as option (option)}
+        <!-- The other language of this page, not of the site: somebody halfway
+             down the privacy page who switches language wants the privacy page.
 
-           data-sveltekit-reload because each language is its own document:
-           the language of a page is in its `<html lang>`, written when the
-           file was generated, and a client-side navigation would swap the
-           text while leaving that attribute - and so a screen reader's
-           pronunciation - on the language the person just left. -->
-      <a
-        href={pathFor(option, page)}
-        hreflang={option}
-        lang={option}
-        data-sveltekit-reload
-        aria-current={option === locale ? 'page' : undefined}
-        onclick={() => remember(option)}
-      >
-        {messages[option].languageName}
-      </a>
-    {/each}
+             data-sveltekit-reload because each language is its own document:
+             the language of a page is in its `<html lang>`, written when the
+             file was generated, and a client-side navigation would swap the
+             text while leaving that attribute - and so a screen reader's
+             pronunciation - on the language the person just left. -->
+        <a
+          class="switch-option"
+          href={pathFor(option, page)}
+          hreflang={option}
+          lang={option}
+          data-sveltekit-reload
+          aria-current={option === locale ? 'page' : undefined}
+          onclick={() => remember(option)}
+        >
+          {messages[option].languageName}
+        </a>
+      {/each}
+      <span class="switch-thumb" aria-hidden="true"></span>
+    </div>
   </nav>
 
   <ThemeControl {locale} />

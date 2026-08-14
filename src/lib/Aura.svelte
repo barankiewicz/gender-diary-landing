@@ -31,7 +31,7 @@
         colorToken: '--blob-pink',
         swayX: 0.07,
         swayY: 0.045,
-        speed: 0.17,
+        speed: 0.8,
         phaseOffset: 0,
       },
       {
@@ -41,7 +41,7 @@
         colorToken: '--blob-blue',
         swayX: 0.055,
         swayY: 0.065,
-        speed: 0.13,
+        speed: 0.65,
         phaseOffset: 7,
       },
       {
@@ -51,7 +51,7 @@
         colorToken: '--blob-white',
         swayX: 0.045,
         swayY: 0.04,
-        speed: 0.11,
+        speed: 0.55,
         phaseOffset: 13,
       },
     ];
@@ -173,9 +173,18 @@
     will-change: transform;
   }
 
-    /* Both gutters carry colour now that the layer is the whole viewport rather
-      than the hero: pink leads at the top right, blue trails at the bottom
-      left, and the theme's neutral sits between them. */
+  /* Hierarchy: a still gradient reads as a picture someone placed behind the
+     words, and a reader starts looking at it. A moving one reads as the
+     surface the page is on, which is what keeps it underneath the text rather
+     than competing with it. The one thing on the site that loops.
+
+     The keyframes live in base.css behind the same media query, which is the
+     gate for everything that moves here. With reduced motion the blobs still
+     paint, parked where their drift would start. */
+  
+  /* Both gutters carry colour now that the layer is the whole viewport rather
+     than the hero: pink leads at the top right, blue trails at the bottom
+     left, and the theme's neutral sits between them. */
   .blob-a {
     width: 55vw;
     height: 55vw;
@@ -200,14 +209,6 @@
     background: radial-gradient(circle, var(--blob-white), transparent 60%);
   }
 
-  /* Hierarchy: a still gradient reads as a picture someone placed behind the
-     words, and a reader starts looking at it. A moving one reads as the
-     surface the page is on, which is what keeps it underneath the text rather
-     than competing with it. The one thing on the site that loops.
-
-     The keyframes live in base.css behind the same media query, which is the
-     gate for everything that moves here. With reduced motion the blobs still
-     paint, parked where their drift would start. */
   @media (prefers-reduced-motion: no-preference) {
     .blob-a {
       animation: drift-a 19s ease-in-out infinite;
