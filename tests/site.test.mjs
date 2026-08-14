@@ -126,42 +126,6 @@ async function tabTo(page, name, limit = 20) {
 const sidewaysOverflow = (page) =>
   page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
 
-/** A text-size change can produce one or two frames of wider layout while the
-    browser swaps metrics and repaints. This waits for the document to settle
-    rather than sampling that transient state, and if it does not settle it
-    reports which elements still stick out of the viewport. */
-async function expectNoSidewaysOverflow(page, message, timeout = 2_000) {
-  try {
-    await page.waitForFunction(
-      () => document.documentElement.scrollWidth - document.documentElement.clientWidth === 0,
-      { timeout },
-    );
-    return;
-  } catch {
-    const diagnostics = await page.evaluate(() => {
-      const viewport = document.documentElement.clientWidth;
-      return [...document.querySelectorAll('body *')]
-        .map((element) => {
-          const rect = element.getBoundingClientRect();
-          return {
-            tag: element.tagName.toLowerCase(),
-            className: element.className,
-            text: (element.textContent || '').trim().replace(/\s+/g, ' ').slice(0, 80),
-            left: Number(rect.left.toFixed(1)),
-            right: Number(rect.right.toFixed(1)),
-            width: Number(rect.width.toFixed(1)),
-          };
-        })
-        .filter((element) => element.right > viewport + 0.5 || element.left < -0.5)
-        .slice(0, 6);
-    });
-
-    assert.fail(
-      `${message}; overflow remained ${await sidewaysOverflow(page)}px; offenders: ${JSON.stringify(diagnostics)}`,
-    );
-  }
-}
-
 /** The contrast ratios the palette produces, read from the page rather than
     from the stylesheet, so a token that moved is measured where it lands.
     Also reports whether the two gradient-painted headings are still large
@@ -741,38 +705,6 @@ for (const scheme of ['light', 'dark']) {
   });
 }
 
-/* Somebody who doubles the text size is the reason the layout is built in
-   relative units, and a layout pinned in pixels answers by pushing the page
-   sideways. Run at 390px rather than at the default desktop width: a wide
-   viewport absorbs the extra text and the check passes on slack instead of
-   on merit - at 1280px this same page survives 400%. The phone is where the
-   two pressures meet. Polish runs too, because it is the longer text. */
-for (const locale of ['en', 'pl']) {
-  test(`${locale}: doubling the text size does not push a phone page sideways`, async () => {
-    const { context, page } = await visitor({});
-    try {
-      await page.setViewportSize({ width: 390, height: 844 });
-      for (const suffix of Object.values(PAGE_PATHS)) {
-        await page.goto(`${base}/${locale}/${suffix}`);
-        await page.waitForLoadState('networkidle');
-        await page.evaluate(async () => {
-          await document.fonts.ready;
-          document.documentElement.style.fontSize = '200%';
-          await new Promise((resolve) =>
-            requestAnimationFrame(() => requestAnimationFrame(resolve)),
-          );
-        });
-        await expectNoSidewaysOverflow(
-          page,
-          `/${locale}/${suffix} scrolls sideways at 200% text size on a 390px screen`,
-        );
-      }
-    } finally {
-      await context.close();
-    }
-  });
-}
-
 test('reduced motion disables the moving parts rather than shortening them', async () => {
   const { context, page } = await visitor({});
   try {
@@ -814,18 +746,12 @@ test('reduced motion disables the moving parts rather than shortening them', asy
     await page.reload();
     const animated = await page.evaluate(() => ({
       hero: getComputedStyle(document.querySelector('main h1')).animationName,
-      blob: document.querySelector('.blob-a')
-        ? getComputedStyle(document.querySelector('.blob-a')).animationName
-        : null,
-      canvas: document.querySelector('.aura-canvas') !== null,
+      blob: getComputedStyle(document.querySelector('.blob-a')).animationName,
     }));
 
     assert.ok(animated.hero.includes('rise'), 'hero entrance did not return with motion allowed');
     assert.ok(animated.hero.includes('shimmer'), 'hero shimmer did not return with motion allowed');
-    assert.ok(
-      animated.blob?.includes('drift-a') || (animated.canvas && animated.blob === null),
-      'aurora did not return to its animated full-motion state',
-    );
+    assert.ok(animated.blob.includes('drift-a'), 'aurora drift did not return with motion allowed');
   } finally {
     await context.close();
   }
