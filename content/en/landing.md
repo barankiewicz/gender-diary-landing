@@ -301,7 +301,7 @@ and on Journal ticket 11, which is why no sentence here says the app runs on And
 for a renderer, so quoting these strings here would leave two copies of a live sentence
 to drift apart quietly. What follows is the reasoning the strings cannot carry.
 
-**Start journal** links to `https://app.genderdiary.barankiewicz.dev/`, in this tab,
+**Start journal** links to `https://app.gender-diary.barankiewicz.dev/`, in this tab,
 with nothing appended: no campaign parameter, no referral identifier, and neither of
 the two choices this origin remembers. It is the only action on the page, and a test
 counts the links in `main` rather than trusting anyone to keep it that way.

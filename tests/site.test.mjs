@@ -19,8 +19,8 @@ const SITE_ORIGIN = 'https://gender-diary.barankiewicz.dev';
 /* The production Journal, on the origin it has to itself. Provisional in the
    same way, and decided by the Journal repository's ticket 01. The exact
    string is the assertion, for the reason given on JOURNAL_URL in
-   src/lib/site.ts, and changing it there means changing it here. */
-const JOURNAL_URL = 'https://app.genderdiary.barankiewicz.dev/';
+  src/lib/site.ts, and changing it there means changing it here. */
+const JOURNAL_URL = 'https://app.gender-diary.barankiewicz.dev/';
 
 /** The four Android channels, in the order the page lists them. The order is
     the opinion: the three that do not report an install to Google come first,
