@@ -140,13 +140,17 @@
 <style>
   /* Behind everything, including the scrims that sit under text blocks: those
      are at -1 inside sections that isolate themselves, so the two layers can
-     never reorder. `clip` keeps a blob hanging off the edge from widening the
-     document, which the 390px overflow tests would otherwise catch. */
+     never reorder. This layer has to be its own paint containment as well as
+     clipped: some Chromium builds still count a fixed child's blurred overflow
+     in document scroll metrics otherwise, which is how the 390px overflow
+     check saw the parked blobs rather than the page. */
   .aura {
     position: fixed;
     inset: 0;
     z-index: -2;
     overflow: clip;
+    clip-path: inset(0);
+    contain: paint;
     pointer-events: none;
   }
 
