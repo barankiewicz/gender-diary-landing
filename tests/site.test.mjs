@@ -718,6 +718,7 @@ for (const locale of ['en', 'pl']) {
       await page.setViewportSize({ width: 390, height: 844 });
       for (const suffix of Object.values(PAGE_PATHS)) {
         await page.goto(`${base}/${locale}/${suffix}`);
+        await page.waitForLoadState('networkidle');
         await page.evaluate(async () => {
           await document.fonts.ready;
           document.documentElement.style.fontSize = '200%';
