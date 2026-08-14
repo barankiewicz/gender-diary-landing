@@ -126,6 +126,42 @@ async function tabTo(page, name, limit = 20) {
 const sidewaysOverflow = (page) =>
   page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
 
+/** A text-size change can produce one or two frames of wider layout while the
+    browser swaps metrics and repaints. This waits for the document to settle
+    rather than sampling that transient state, and if it does not settle it
+    reports which elements still stick out of the viewport. */
+async function expectNoSidewaysOverflow(page, message, timeout = 2_000) {
+  try {
+    await page.waitForFunction(
+      () => document.documentElement.scrollWidth - document.documentElement.clientWidth === 0,
+      { timeout },
+    );
+    return;
+  } catch {
+    const diagnostics = await page.evaluate(() => {
+      const viewport = document.documentElement.clientWidth;
+      return [...document.querySelectorAll('body *')]
+        .map((element) => {
+          const rect = element.getBoundingClientRect();
+          return {
+            tag: element.tagName.toLowerCase(),
+            className: element.className,
+            text: (element.textContent || '').trim().replace(/\s+/g, ' ').slice(0, 80),
+            left: Number(rect.left.toFixed(1)),
+            right: Number(rect.right.toFixed(1)),
+            width: Number(rect.width.toFixed(1)),
+          };
+        })
+        .filter((element) => element.right > viewport + 0.5 || element.left < -0.5)
+        .slice(0, 6);
+    });
+
+    assert.fail(
+      `${message}; overflow remained ${await sidewaysOverflow(page)}px; offenders: ${JSON.stringify(diagnostics)}`,
+    );
+  }
+}
+
 /** The contrast ratios the palette produces, read from the page rather than
     from the stylesheet, so a token that moved is measured where it lands.
     Also reports whether the two gradient-painted headings are still large
@@ -726,9 +762,8 @@ for (const locale of ['en', 'pl']) {
             requestAnimationFrame(() => requestAnimationFrame(resolve)),
           );
         });
-        assert.equal(
-          await sidewaysOverflow(page),
-          0,
+        await expectNoSidewaysOverflow(
+          page,
           `/${locale}/${suffix} scrolls sideways at 200% text size on a 390px screen`,
         );
       }
